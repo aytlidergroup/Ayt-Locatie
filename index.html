@@ -65,9 +65,9 @@ button{cursor:pointer;border:none}
 #sheet.dragging{transition:none}
 #grab{touch-action:none;padding:10px 18px 12px;cursor:grab;flex-shrink:0}
 #grab .h{width:42px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 10px}
-#grab .t{display:flex;justify-content:space-between;align-items:baseline}
+#grab .t{display:flex;align-items:center;gap:8px}
 #grab b{font-size:16px;font-weight:800}
-#grab span{font-size:12px;color:var(--muted);font-weight:500}
+#grab span{font-size:12px;color:var(--muted);font-weight:500;margin-left:auto}
 #list{flex:1;overflow-y:auto;padding:0 10px max(16px,env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 
 .card{border-radius:16px;padding:12px;margin-bottom:6px;cursor:pointer;transition:background .15s}
@@ -93,6 +93,13 @@ button{cursor:pointer;border:none}
 .empty{text-align:center;padding:36px 20px;color:var(--muted);font-size:14px;line-height:1.6}
 .empty button{margin-top:14px;background:var(--accent);color:var(--accent-ink);padding:12px 20px;border-radius:12px;font-weight:700}
 
+.back{width:34px;height:34px;border-radius:11px;background:var(--bg);font-size:24px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding-bottom:3px}
+.back[hidden]{display:none}
+.city{display:flex;align-items:center;gap:12px;padding:12px;border-radius:16px;margin-bottom:6px;cursor:pointer}
+.city:active{background:var(--bg)}
+.city .cc{font-size:12.5px;color:var(--muted);margin-top:3px}
+.city .chev{color:var(--muted);font-size:22px}
+.inp input:disabled{opacity:.6;background:var(--line);cursor:not-allowed}
 /* dialogs */
 .scrim{position:fixed;inset:0;z-index:1000;background:rgba(8,14,26,.55);display:none;align-items:flex-end;justify-content:center}
 .scrim.open{display:flex}
@@ -148,11 +155,7 @@ button{cursor:pointer;border:none}
       <input type="search" id="search" placeholder="Caută magazin" autocomplete="off" enterkeyhint="search">
       <button class="clear" id="clear" aria-label="Șterge">✕</button>
     </label>
-    <button class="add" onclick="openForm('add')" aria-label="Magazin nou">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-    </button>
   </div>
-  <div class="chips" id="chips"></div>
 </div>
 
 <button class="fab" id="locate" aria-label="Locația mea">
@@ -160,7 +163,7 @@ button{cursor:pointer;border:none}
 </button>
 
 <section id="sheet">
-  <div id="grab"><div class="h"></div><div class="t"><b id="count">Magazine</b><span id="total"></span></div></div>
+  <div id="grab"><div class="h"></div><div class="t"><button class="back" id="back" hidden aria-label="Înapoi">‹</button><b id="count">Orașe</b><span id="total"></span></div></div>
   <div id="list"></div>
 </section>
 
@@ -168,10 +171,11 @@ button{cursor:pointer;border:none}
 <div class="scrim" id="formModal">
   <div class="dlg" role="dialog" aria-modal="true">
     <div class="h"></div>
-    <h2 id="fTitle">Magazin nou</h2>
+    <h2 id="fTitle">Editează locația</h2>
     <div class="fld">
       <label for="f_name">Nume magazin</label>
-      <div class="inp"><input id="f_name" placeholder="ex: Mega Image Lipscani" autocomplete="off"></div>
+      <div class="inp"><input id="f_name" disabled></div>
+      <div class="hint">Numele este unic și nu poate fi modificat.</div>
     </div>
     <div class="fld">
       <label for="f_link">Link locație</label>
@@ -179,7 +183,7 @@ button{cursor:pointer;border:none}
         <input id="f_link" inputmode="url" placeholder="Lipește linkul aici" autocomplete="off">
         <button class="mini" id="pasteBtn" type="button">📋 Lipește</button>
       </div>
-      <div class="hint">Google Maps, Waze, Apple Maps sau coordonate. Locația se detectează automat.</div>
+      <div class="hint">Google Maps, Waze (și linkuri scurte), Apple Maps sau coordonate. Locația se detectează automat.</div>
     </div>
     <div class="pv" id="f_pv"></div>
     <button class="gpsbtn" type="button" id="gpsBtn">📍 Folosește locația mea acum</button>
@@ -213,8 +217,8 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const wide = () => window.matchMedia('(min-width:820px)').matches;
 
 let stores = [], map, tiles, pins = {}, meMarker;
-let selected = null, cityFilter = '';
-let form = { mode:'add', row:null, loc:null };
+let selected = null, cityFilter = null;
+let form = { row:null, loc:null, changed:false };
 let snap = 1;
 
 /* ---------- coordonate (neschimbat) ---------- */
@@ -234,6 +238,7 @@ function getCoords(s) {
 const PATTERNS = [
   /@(-?\d+\.?\d*),(-?\d+\.?\d*)/, /[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/, /[?&]ll=(-?\d+\.?\d*),(-?\d+\.?\d*)/,
   /[?&]center=(-?\d+\.?\d*),(-?\d+\.?\d*)/, /!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/,
+  /ll\.(-?\d+\.?\d*)(?:,|%2C)(-?\d+\.?\d*)/i,
   /\/place\/(-?\d+\.?\d*),(-?\d+\.?\d*)/, /^(-?\d+\.?\d*)\s*[,;]\s*(-?\d+\.?\d*)$/
 ];
 function matchCoords(text) {
@@ -246,9 +251,24 @@ function matchCoords(text) {
   }
   return null;
 }
+function geohashDecode(h) {
+  const B = '0123456789bcdefghjkmnpqrstuvwxyz';
+  let lat = [-90, 90], lng = [-180, 180], even = true;
+  for (const ch of h.toLowerCase()) {
+    const idx = B.indexOf(ch); if (idx < 0) return null;
+    for (let b = 4; b >= 0; b--) {
+      const r = even ? lng : lat, mid = (r[0] + r[1]) / 2;
+      if ((idx >> b) & 1) r[0] = mid; else r[1] = mid;
+      even = !even;
+    }
+  }
+  return { lat:(lat[0] + lat[1]) / 2, lng:(lng[0] + lng[1]) / 2 };
+}
 async function extractCoordsFromLink(url) {
   url = (url || '').trim();
   if (!url) return null;
+  const wz = url.match(/waze\.com\/ul\/h([0-9b-hjkmnp-z]+)/i);
+  if (wz) { const g = geohashDecode(wz[1]); if (g) return g; }
   const direct = matchCoords(url);
   if (direct) return direct;
   if (/goo\.gl|maps\.app\.goo\.gl|waze\.com\/ul|apple\.co|maps\.apple\.com/i.test(url)) {
@@ -304,7 +324,7 @@ function setSheet(px, drag) {
 function goSnap(i) { snap = i; setSheet(snaps()[i]); }
 (function dragInit() {
   const g = $('grab'); let y0, h0, moved;
-  g.addEventListener('pointerdown', e => { if (wide()) return; y0 = e.clientY; h0 = $('sheet').offsetHeight; moved = false; g.setPointerCapture(e.pointerId); });
+  g.addEventListener('pointerdown', e => { if (wide() || e.target.closest('button')) return; y0 = e.clientY; h0 = $('sheet').offsetHeight; moved = false; g.setPointerCapture(e.pointerId); });
   g.addEventListener('pointermove', e => {
     if (y0 === undefined) return;
     const dy = y0 - e.clientY; if (Math.abs(dy) > 4) moved = true;
@@ -328,45 +348,55 @@ async function load() {
   } catch(e) { toast('Fără conexiune. Încearcă din nou.'); render(); }
 }
 
-function renderChips() {
-  const cities = [...new Set(stores.map(s => (s.region || '').trim()).filter(Boolean))].sort();
-  if (cityFilter && !cities.includes(cityFilter)) cityFilter = '';
-  $('chips').innerHTML = cities.length < 2 ? '' :
-    [''].concat(cities).map(c => `<button class="chip ${c === cityFilter ? 'on' : ''}" data-c="${esc(c)}">${c ? esc(c) : 'Toate'}</button>`).join('');
-}
-
 function render() {
-  renderChips();
   const q = $('search').value.trim().toLowerCase();
   $('clear').classList.toggle('on', !!q);
-  const filtered = stores.filter(s =>
-    (!q || (s.name || '').toLowerCase().includes(q)) && (!cityFilter || (s.region || '').trim() === cityFilter));
-
-  $('count').textContent = filtered.length === 1 ? '1 magazin' : `${filtered.length} magazine`;
-  $('total').textContent = filtered.length !== stores.length ? `din ${stores.length}` : '';
-
+  const inCity = cityFilter !== null;
+  $('back').hidden = !inCity;
   const list = $('list');
-  if (!filtered.length) {
-    list.innerHTML = stores.length
-      ? '<div class="empty">Niciun magazin nu se potrivește.<br>Încearcă alt nume sau alt oraș.</div>'
-      : '<div class="empty">Nu ai niciun magazin încă.<br><button onclick="openForm(\'add\')">Adaugă primul magazin</button></div>';
-  } else {
-    list.innerHTML = filtered.map(s => {
-      const has = !!getCoords(s), name = s.name || 'Fără nume';
-      return `<div class="card ${s.rowIndex === selected ? 'active' : ''}" data-row="${s.rowIndex}">
-        <div class="row">
-          <div class="ico">${esc(name.trim().charAt(0).toUpperCase())}</div>
-          <div class="meta"><div class="nm">${esc(name)}</div>
-            <div class="sub">${s.region ? esc(s.region) : ''}${has ? '' : '<span class="nolo">Fără locație</span>'}</div></div>
-        </div>
-        <div class="acts">
-          <button class="go" data-go="${s.rowIndex}" ${has ? '' : 'disabled'}>🧭 Navighează</button>
-          <button class="ed" data-ed="${s.rowIndex}" aria-label="Editează">✏️</button>
-        </div></div>`;
-    }).join('');
-  }
 
   Object.values(pins).forEach(m => map.removeLayer(m)); pins = {};
+
+  /* 1. lista de orașe */
+  if (!inCity && !q) {
+    const counts = {};
+    stores.forEach(s => { const c = (s.region || '').trim(); counts[c] = (counts[c] || 0) + 1; });
+    const cities = Object.keys(counts).sort((a, b) => !a ? 1 : !b ? -1 : a.localeCompare(b, 'ro'));
+    $('count').textContent = cities.length === 1 ? '1 oraș' : `${cities.length} orașe`;
+    $('total').textContent = `${stores.length} magazine`;
+    list.innerHTML = cities.length ? cities.map(c => {
+      const n = counts[c], label = c || 'Fără oraș';
+      return `<div class="city" data-c="${esc(c)}"><div class="ico">${esc(label.charAt(0).toUpperCase())}</div>
+        <div class="meta"><div class="nm">${esc(label)}</div><div class="cc">${n === 1 ? '1 magazin' : n + ' magazine'}</div></div>
+        <span class="chev">›</span></div>`;
+    }).join('') : '<div class="empty">Nu s-au găsit magazine.<br>Verifică linkul Apps Script.</div>';
+    return;
+  }
+
+  /* 2. magazinele orașului (sau rezultatele căutării) */
+  const filtered = stores.filter(s =>
+    (!q || (s.name || '').toLowerCase().includes(q)) && (!inCity || (s.region || '').trim() === cityFilter));
+  $('count').textContent = inCity ? (cityFilter || 'Fără oraș') : 'Rezultate';
+  $('total').textContent = filtered.length === 1 ? '1 magazin' : `${filtered.length} magazine`;
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty">Niciun magazin nu se potrivește.<br>Încearcă alt nume.</div>';
+    return;
+  }
+  list.innerHTML = filtered.map(s => {
+    const has = !!getCoords(s), name = s.name || 'Fără nume';
+    return `<div class="card ${s.rowIndex === selected ? 'active' : ''}" data-row="${s.rowIndex}">
+      <div class="row">
+        <div class="ico">${esc(name.trim().charAt(0).toUpperCase())}</div>
+        <div class="meta"><div class="nm">${esc(name)}</div>
+          <div class="sub">${!inCity && s.region ? esc(s.region) : ''}${has ? '' : '<span class="nolo">Fără locație</span>'}</div></div>
+      </div>
+      <div class="acts">
+        <button class="go" data-go="${s.rowIndex}" ${has ? '' : 'disabled'}>🧭 Navighează</button>
+        <button class="ed" data-ed="${s.rowIndex}" aria-label="Editează locația">✏️</button>
+      </div></div>`;
+  }).join('');
+
   const visible = [];
   filtered.forEach(s => {
     const c = getCoords(s); if (!c) return;
@@ -374,11 +404,11 @@ function render() {
     pins[s.rowIndex] = L.marker(c, { icon:pinIcon(s.rowIndex === selected) }).addTo(map)
       .on('click', () => select(s.rowIndex, true));
   });
-  if ((q || cityFilter) && visible.length) fit(visible);
+  if (visible.length) fit(visible);
 }
 
 function fit(coords) {
-  const sh = $('sheet').offsetHeight;
+  const sh = snaps()[snap];
   const opt = wide() ? { paddingTopLeft:[420, 110], paddingBottomRight:[30, 30] } : { paddingTopLeft:[30, 120], paddingBottomRight:[30, sh + 20] };
   map.fitBounds(L.latLngBounds(coords), { ...opt, maxZoom:16, animate:true });
 }
@@ -395,46 +425,53 @@ function select(row, fromPin) {
   if (card && fromPin) card.scrollIntoView({ block:'nearest', behavior:'smooth' });
 }
 
-/* ---------- formular ---------- */
+/* ---------- editare locație ---------- */
 function setPreview(state, html) {
   const p = $('f_pv'); p.className = 'pv on ' + state; p.innerHTML = html;
 }
 function showLoc(loc, label) {
-  setPreview('ok', `<span class="pi">✅</span><div><b>${esc(label)}</b> · ${esc(loc.city || 'Oraș necunoscut')}<small>${(+loc.lat).toFixed(5)}, ${(+loc.lng).toFixed(5)}</small></div>`);
+  setPreview('ok', `<span class="pi">✅</span><div><b>${esc(label)}</b>${loc.city ? ' · ' + esc(loc.city) : ''}<small>${(+loc.lat).toFixed(5)}, ${(+loc.lng).toFixed(5)}</small></div>`);
 }
-function checkForm() { $('saveBtn').disabled = !($('f_name').value.trim() && form.loc); }
+function checkForm() { $('saveBtn').disabled = !(form.loc && form.changed); }
+const curStore = () => stores.find(x => x.rowIndex === form.row);
 
-function openForm(mode, row) {
-  form = { mode, row:row || null, loc:null };
+function openForm(row) {
+  const s = stores.find(x => x.rowIndex === row); if (!s) return;
+  form = { row, loc:null, changed:false };
   $('f_link').value = ''; $('f_pv').className = 'pv';
-  $('fTitle').textContent = mode === 'add' ? 'Magazin nou' : 'Editează magazin';
-  if (mode === 'edit') {
-    const s = stores.find(x => x.rowIndex === row);
-    $('f_name').value = s.name || '';
-    const c = getCoords(s);
-    if (c) {
-      form.loc = { lat:c[0].toFixed(7), lng:c[1].toFixed(7), city:s.region || '', mapLink:s.mapAddress || `https://www.google.com/maps?q=${c[0]},${c[1]}` };
-      showLoc(form.loc, 'Locația actuală');
-    }
-  } else $('f_name').value = '';
+  $('f_name').value = s.name || '';
+  const c = getCoords(s);
+  if (c) {
+    form.loc = { lat:c[0].toFixed(7), lng:c[1].toFixed(7), city:(s.region || '').trim(), mapLink:s.mapAddress || `https://www.google.com/maps?q=${c[0]},${c[1]}` };
+    showLoc(form.loc, 'Locația actuală');
+  }
   checkForm();
   $('formModal').classList.add('open');
-  if (mode === 'add') setTimeout(() => $('f_name').focus(), 300);
+}
+
+/* orașul rămâne cel din tabel; doar dacă lipsește se caută automat */
+async function setNewLoc(lat, lng, label) {
+  const s = curStore();
+  const city = ((s && s.region) || '').trim() || await reverseGeocode(lat, lng);
+  form.loc = { lat:lat.toFixed(7), lng:lng.toFixed(7), city, mapLink:`https://www.google.com/maps?q=${lat},${lng}` };
+  form.changed = true;
+  showLoc(form.loc, label); checkForm();
 }
 
 async function processLink(input) {
   input = input.trim(); if (!input) return;
   setPreview('ld', '<span class="pi">⏳</span><div>Se caută locația…</div>');
   const c = await extractCoordsFromLink(input);
-  if (!c) { form.loc = null; setPreview('err', '<span class="pi">⚠️</span><div>Nu am găsit coordonate în link. Verifică linkul sau folosește locația ta.</div>'); checkForm(); return; }
-  const city = await reverseGeocode(c.lat, c.lng);
-  form.loc = { lat:c.lat.toFixed(7), lng:c.lng.toFixed(7), city, mapLink:`https://www.google.com/maps?q=${c.lat},${c.lng}` };
-  showLoc(form.loc, 'Locație găsită'); checkForm();
+  if (!c) {
+    form.loc = null; form.changed = false;
+    setPreview('err', '<span class="pi">⚠️</span><div>Nu am găsit coordonate în link. Verifică linkul sau folosește locația ta.</div>');
+    checkForm(); return;
+  }
+  await setNewLoc(c.lat, c.lng, 'Locație găsită');
 }
 
 let linkT;
 $('f_link').addEventListener('input', e => { clearTimeout(linkT); linkT = setTimeout(() => processLink(e.target.value), 600); });
-$('f_name').addEventListener('input', checkForm);
 $('pasteBtn').onclick = async () => {
   try { const t = await navigator.clipboard.readText(); $('f_link').value = t; processLink(t); }
   catch(e) { toast('Lipește manual în câmp'); $('f_link').focus(); }
@@ -442,26 +479,23 @@ $('pasteBtn').onclick = async () => {
 $('gpsBtn').onclick = () => {
   if (!navigator.geolocation) return toast('GPS indisponibil');
   setPreview('ld', '<span class="pi">⏳</span><div>Se obține locația…</div>');
-  navigator.geolocation.getCurrentPosition(async pos => {
-    const { latitude:lat, longitude:lng } = pos.coords;
-    const city = await reverseGeocode(lat, lng);
-    form.loc = { lat:lat.toFixed(7), lng:lng.toFixed(7), city, mapLink:`https://www.google.com/maps?q=${lat},${lng}` };
-    showLoc(form.loc, 'Locația ta'); checkForm();
-  }, err => { setPreview('err', `<span class="pi">⚠️</span><div>GPS: ${esc(err.message)}</div>`); },
-  { enableHighAccuracy:true, timeout:20000 });
+  navigator.geolocation.getCurrentPosition(
+    pos => setNewLoc(pos.coords.latitude, pos.coords.longitude, 'Locația ta'),
+    err => setPreview('err', `<span class="pi">⚠️</span><div>GPS: ${esc(err.message)}</div>`),
+    { enableHighAccuracy:true, timeout:20000 });
 };
 
 $('saveBtn').onclick = async () => {
-  const name = $('f_name').value.trim(), loc = form.loc;
-  if (!name || !loc) return;
-  const data = { number:'', name, address:'', mapAddress:loc.mapLink, lng:loc.lng, lat:loc.lat, region:loc.city };
-  const isEdit = form.mode === 'edit';
-  if (isEdit) data.rowIndex = form.row;
+  const s = curStore(), loc = form.loc;
+  if (!s || !loc) return;
+  const data = { rowIndex:form.row, number:s.number ?? '', name:s.name, address:s.address ?? '',
+    mapAddress:loc.mapLink, lng:loc.lng, lat:loc.lat, region:loc.city };
   const btn = $('saveBtn'); btn.disabled = true; btn.textContent = 'Se salvează…';
   try {
-    const res = await apiPost({ action:isEdit ? 'update' : 'add', data:JSON.stringify(data) });
+    const res = await apiPost({ action:'update', data:JSON.stringify(data) });
     if (res.success) {
-      closeM('formModal'); toast(isEdit ? 'Salvat' : 'Magazin adăugat');
+      closeM('formModal'); toast('Locație salvată');
+      selected = form.row;
       await load();
       const c = getCoords(data); if (c) fit([c]);
     } else toast('Eroare: ' + res.message);
@@ -491,13 +525,19 @@ function openNav(row) {
 $('list').addEventListener('click', e => {
   const go = e.target.closest('[data-go]'), ed = e.target.closest('[data-ed]'), card = e.target.closest('.card');
   if (go) return openNav(+go.dataset.go);
-  if (ed) return openForm('edit', +ed.dataset.ed);
+  if (ed) return openForm(+ed.dataset.ed);
   if (card) select(+card.dataset.row);
 });
-$('chips').addEventListener('click', e => {
-  const c = e.target.closest('.chip'); if (!c) return;
-  cityFilter = c.dataset.c; render();
+$('list').addEventListener('click', e => {
+  const c = e.target.closest('.city'); if (!c) return;
+  cityFilter = c.dataset.c; selected = null; $('search').value = '';
+  if (!wide() && snap === 2) goSnap(1);
+  render(); $('list').scrollTop = 0;
 });
+$('back').onclick = () => {
+  cityFilter = null; selected = null; render();
+  map.flyTo([45.9432, 24.9668], 7);
+};
 $('search').addEventListener('input', render);
 $('clear').onclick = () => { $('search').value = ''; render(); $('search').focus(); };
 $('locate').onclick = () => {
