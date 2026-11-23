@@ -1,152 +1,241 @@
 <!DOCTYPE html>
-<html lang="ro" dir="ltr">
+<html lang="ro">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestionare locații magazine</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1e3a8a">
+<title>Locații Magazine</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; overscroll-behavior: none; }
   body {
-    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
-    background: #f0f4f8;
-    color: #1e293b;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
+    font-family: -apple-system, 'Segoe UI', Roboto, Tahoma, sans-serif;
+    background: #f1f5f9; color: #0f172a;
+    display: flex; flex-direction: column; height: 100dvh;
   }
+
+  /* ---------- HEADER ---------- */
   header {
     background: linear-gradient(135deg,#1e3a8a,#2563eb);
-    color: white;
-    padding: 12px 16px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+    color: white; padding: 10px 14px;
+    display: flex; align-items: center; gap: 8px;
+    flex-shrink: 0; padding-top: max(10px, env(safe-area-inset-top));
+    box-shadow: 0 2px 8px rgba(30,58,138,.25);
   }
-  header h1 { font-size: 18px; flex: 1; }
-  .btn {
-    background: #2563eb; color: white; border: none;
-    padding: 8px 14px; border-radius: 8px; cursor: pointer;
-    font-family: inherit; font-size: 13px;
+  header h1 { font-size: 15px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .icon-btn {
+    background: rgba(255,255,255,.15); border: none; color: white;
+    width: 38px; height: 38px; border-radius: 10px; cursor: pointer;
+    font-size: 18px; display: flex; align-items: center; justify-content: center;
+    transition: background .2s;
   }
-  .btn:hover { opacity: .9; }
-  .btn.green { background: #16a34a; }
-  .btn.red { background: #dc2626; }
-  .btn.gray { background: #64748b; }
-  .btn.gold { background: #d97706; }
+  .icon-btn:hover, .icon-btn:active { background: rgba(255,255,255,.3); }
 
+  /* ---------- SEARCH BAR ---------- */
   #searchBar {
-    display: flex; gap: 8px; padding: 10px 16px; background: white;
-    box-shadow: 0 2px 6px rgba(0,0,0,.08);
-    z-index: 1000;
-    flex-wrap: wrap;
+    background: white; padding: 10px 14px;
+    display: flex; gap: 8px; flex-wrap: wrap; flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06); z-index: 800;
   }
-  #searchBar input {
-    flex: 1; min-width: 180px;
-    padding: 10px 12px; border: 1px solid #cbd5e1;
-    border-radius: 8px; font-size: 14px; font-family: inherit;
+  #searchBar input, #searchBar select {
+    padding: 10px 12px; border: 1.5px solid #e2e8f0;
+    border-radius: 10px; font-size: 14px; font-family: inherit;
+    background: #f8fafc; transition: border-color .2s;
   }
-  #searchBar select {
-    padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-family: inherit;
+  #searchBar input { flex: 1; min-width: 140px; }
+  #searchBar input:focus, #searchBar select:focus {
+    outline: none; border-color: #2563eb; background: white;
   }
+  #searchBar select { max-width: 140px; }
 
-  #main { flex: 1; display: flex; overflow: hidden; position: relative; }
+  /* ---------- MAIN ---------- */
+  #main { flex: 1; display: flex; overflow: hidden; position: relative; min-height: 0; }
 
+  /* ---------- SIDE PANEL (desktop) ---------- */
   #sidePanel {
-    width: 360px; background: white; overflow-y: auto;
-    border-right: 1px solid #e2e8f0;
+    width: 380px; background: white; overflow-y: auto;
+    border-right: 1px solid #e2e8f0; -webkit-overflow-scrolling: touch;
+  }
+  #panelHeader {
+    position: sticky; top: 0; z-index: 10;
+    padding: 10px 14px; background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0; font-size: 12px; color: #475569;
+    display: flex; align-items: center; justify-content: space-between;
   }
   .store-card {
-    padding: 12px 14px; border-bottom: 1px solid #e2e8f0;
+    padding: 14px 14px; border-bottom: 1px solid #e2e8f0;
     cursor: pointer; transition: background .15s;
   }
-  .store-card:hover { background: #f1f5f9; }
-  .store-card.active { background: #dbeafe; border-left: 3px solid #2563eb; }
+  .store-card:active { background: #e0e7ff; }
+  .store-card.active { background: #dbeafe; border-left: 4px solid #2563eb; }
+  .store-card .top-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
   .store-card .num {
-    display: inline-block; background: #1e3a8a; color: white;
-    font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-right: 6px;
+    background: #1e3a8a; color: white; font-size: 11px; font-weight: 600;
+    padding: 2px 9px; border-radius: 12px; flex-shrink: 0;
   }
-  .store-card h3 { font-size: 14px; margin-bottom: 4px; }
-  .store-card p { font-size: 12px; color: #64748b; margin-top: 3px; }
-  .store-card .tags { margin-top: 6px; }
-  .tag {
-    display: inline-block; font-size: 10px; padding: 2px 7px;
-    border-radius: 8px; margin-right: 4px;
+  .store-card h3 { font-size: 14px; font-weight: 600; flex: 1; }
+  .store-card p { font-size: 12px; color: #64748b; margin-top: 2px; }
+  .store-card .region-badge {
+    display: inline-block; font-size: 10px; padding: 2px 8px;
+    background: #ede9fe; color: #6d28d9; border-radius: 10px; margin-top: 6px;
   }
+  .store-card .tags { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .tag { font-size: 10px; padding: 3px 8px; border-radius: 10px; font-weight: 600; }
   .tag.has { background: #dcfce7; color: #166534; }
   .tag.no { background: #fee2e2; color: #991b1b; }
+  .card-actions { display: flex; gap: 6px; margin-top: 10px; }
+  .card-actions button {
+    flex: 1; padding: 7px 10px; font-size: 12px; font-weight: 600;
+    border: none; border-radius: 8px; cursor: pointer; font-family: inherit;
+  }
 
-  #map { flex: 1; }
+  /* ---------- MAP ---------- */
+  #map { flex: 1; min-height: 0; }
 
+  /* ---------- BUTTONS ---------- */
+  .btn {
+    background: #2563eb; color: white; border: none;
+    padding: 10px 16px; border-radius: 10px; cursor: pointer;
+    font-family: inherit; font-size: 14px; font-weight: 600;
+    transition: transform .1s, opacity .2s;
+  }
+  .btn:active { transform: scale(.97); opacity: .9; }
+  .btn.green { background: #16a34a; }
+  .btn.gray { background: #64748b; }
+  .btn.gold { background: #d97706; }
+  .btn.light { background: #e2e8f0; color: #1e293b; }
+
+  /* ---------- MODAL ---------- */
   .modal-backdrop {
-    position: fixed; inset: 0; background: rgba(0,0,0,.5);
-    display: none; align-items: center; justify-content: center; z-index: 2000;
-    padding: 12px;
+    position: fixed; inset: 0; background: rgba(15,23,42,.55);
+    display: none; align-items: flex-end; justify-content: center;
+    z-index: 2000; backdrop-filter: blur(2px);
   }
   .modal-backdrop.open { display: flex; }
   .modal {
-    background: white; border-radius: 12px; width: 100%; max-width: 480px;
-    max-height: 92vh; overflow-y: auto;
-    padding: 20px;
+    background: white; width: 100%; max-width: 500px;
+    max-height: 92dvh; overflow-y: auto;
+    border-radius: 20px 20px 0 0; padding: 20px;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    animation: slideUp .25s ease-out;
   }
-  .modal h2 { font-size: 16px; margin-bottom: 14px; }
-  .field { margin-bottom: 10px; }
-  .field label { display: block; font-size: 12px; color: #475569; margin-bottom: 4px; }
-  .field input {
-    width: 100%; padding: 9px 11px; border: 1px solid #cbd5e1;
-    border-radius: 8px; font-family: inherit; font-size: 13px;
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .modal-handle {
+    width: 40px; height: 4px; background: #cbd5e1;
+    border-radius: 2px; margin: 0 auto 16px;
+  }
+  .modal h2 { font-size: 17px; margin-bottom: 16px; text-align: center; }
+  .field { margin-bottom: 12px; }
+  .field label {
+    display: block; font-size: 12px; color: #475569;
+    margin-bottom: 5px; font-weight: 600;
+  }
+  .field input, .field select {
+    width: 100%; padding: 11px 13px;
+    border: 1.5px solid #e2e8f0; border-radius: 10px;
+    font-family: inherit; font-size: 14px; background: #f8fafc;
+    transition: border-color .2s;
+  }
+  .field input:focus, .field select:focus {
+    outline: none; border-color: #2563eb; background: white;
   }
   .coords-row { display: flex; gap: 8px; }
   .coords-row .field { flex: 1; }
   .modal-actions {
-    display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;
+    display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap;
   }
-  .modal-actions .btn { flex: 1; }
+  .modal-actions .btn { flex: 1; min-width: 100px; }
+  .hint { font-size: 11px; color: #64748b; margin-top: 5px; line-height: 1.5; }
 
-  .hint {
-    font-size: 11px; color: #64748b; margin-top: 4px; line-height: 1.5;
+  /* ---------- MOBILE BOTTOM SHEET ---------- */
+  @media (max-width: 768px) {
+    #sidePanel {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      top: 30%; width: 100%; z-index: 500;
+      border-radius: 20px 20px 0 0;
+      box-shadow: 0 -4px 20px rgba(0,0,0,.15);
+      transform: translateY(calc(100% - 60px));
+      transition: transform .3s cubic-bezier(.4,0,.2,1);
+      border-right: none;
+    }
+    #sidePanel.open { transform: translateY(0); }
+    #panelHeader {
+      cursor: grab; user-select: none;
+      border-radius: 20px 20px 0 0;
+      padding: 12px 16px;
+    }
+    #panelHeader::before {
+      content: ''; display: block; width: 40px; height: 4px;
+      background: #cbd5e1; border-radius: 2px;
+      position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+    }
+    #map { width: 100%; }
+    .mobile-only { display: block; }
+    header h1 { font-size: 14px; }
+  }
+  @media (min-width: 769px) {
+    .mobile-only { display: none; }
+    #panelHeader::before { display: none; }
   }
 
+  /* ---------- TOAST & LOADING ---------- */
   #toast {
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-    background: #1e293b; color: white; padding: 10px 20px;
-    border-radius: 8px; font-size: 13px; opacity: 0;
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    background: #0f172a; color: white; padding: 12px 22px;
+    border-radius: 12px; font-size: 13px; opacity: 0;
     transition: opacity .3s; pointer-events: none; z-index: 3000;
+    max-width: 90vw; text-align: center;
   }
   #toast.show { opacity: 1; }
-
   #loading {
-    position: fixed; inset: 0; background: rgba(255,255,255,.8);
+    position: fixed; inset: 0; background: rgba(255,255,255,.85);
     display: none; align-items: center; justify-content: center;
-    z-index: 4000; font-size: 16px;
+    z-index: 4000; font-size: 15px;
+    flex-direction: column; gap: 14px;
   }
   #loading.show { display: flex; }
-
-  @media (max-width: 720px) {
-    #sidePanel {
-      position: absolute; inset: 0; width: 100%; z-index: 500;
-      transform: translateX(-100%); transition: transform .3s;
-    }
-    #sidePanel.open { transform: translateX(0); }
-    #map { width: 100%; }
-    .mobile-close { display: block !important; }
+  .spinner {
+    width: 40px; height: 40px; border: 4px solid #e2e8f0;
+    border-top-color: #2563eb; border-radius: 50%;
+    animation: spin .8s linear infinite;
   }
-  .mobile-close { display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- NAVIGATION SHEET ---------- */
+  .nav-options {
+    display: flex; flex-direction: column; gap: 10px; margin-top: 12px;
+  }
+  .nav-option {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px; background: #f8fafc;
+    border: 1.5px solid #e2e8f0; border-radius: 12px;
+    cursor: pointer; transition: all .15s; text-decoration: none;
+    color: #0f172a; font-size: 14px; font-weight: 500;
+  }
+  .nav-option:active { background: #e0e7ff; border-color: #2563eb; }
+  .nav-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🏪 Gestionare locații magazine</h1>
-  <button class="btn" onclick="togglePanel()">📋 Listă</button>
-  <button class="btn green" onclick="openAddModal()">➕ Magazin nou</button>
+  <h1>🏪 Locații Magazine</h1>
+  <button class="icon-btn" onclick="openAddModal()" title="Magazin nou">➕</button>
 </header>
 
 <div id="searchBar">
-  <input type="text" id="searchInput" placeholder="🔍 Căutare după nume / număr / adresă...">
-  <select id="filterSelect">
+  <input type="text" id="searchInput" placeholder="🔍 Caută magazin...">
+  <select id="regionFilter" title="Regiune"><option value="">Toate regiunile</option></select>
+  <select id="filterSelect" title="Stare">
     <option value="all">Toate</option>
     <option value="has">Cu locație</option>
     <option value="no">Fără locație</option>
@@ -155,9 +244,9 @@
 
 <div id="main">
   <div id="sidePanel">
-    <div style="padding:10px 14px; background:#f8fafc; border-bottom:1px solid #e2e8f0; font-size:12px; color:#475569;">
+    <div id="panelHeader">
       <span id="countLabel">Se încarcă...</span>
-      <button class="btn gray mobile-close" style="float:right; padding:4px 10px; font-size:11px;" onclick="togglePanel()">Închide ✕</button>
+      <button class="btn light mobile-only" style="padding:5px 12px; font-size:12px;" onclick="togglePanel()">✕</button>
     </div>
     <div id="storeList"></div>
   </div>
@@ -165,23 +254,28 @@
 </div>
 
 <!-- Modal Adăugare -->
-<div class="modal-backdrop" id="addModal">
-  <div class="modal">
+<div class="modal-backdrop" id="addModal" onclick="if(event.target===this)closeModal('addModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
     <h2>➕ Adăugare magazin nou</h2>
-    <div class="field"><label>Număr magazin (A)</label><input id="add_number"></div>
-    <div class="field"><label>Nume magazin (B)</label><input id="add_name"></div>
+    <div class="field"><label>Număr magazin (A)</label><input id="add_number" inputmode="numeric"></div>
+    <div class="field"><label>Nume magazin (B) *</label><input id="add_name"></div>
     <div class="field"><label>Adresă (C)</label><input id="add_address"></div>
     <div class="field">
+      <label>Regiune / Oraș (G)</label>
+      <input id="add_region" list="regionList" placeholder="ex: București, Cluj...">
+      <datalist id="regionList"></datalist>
+    </div>
+    <div class="field">
       <label>Adresă Google Maps / Waze (D)</label>
-      <input id="add_mapAddress">
-      <div class="hint">Puteți lipi un link Google Maps sau folosi butonul de mai jos pentru locația curentă</div>
+      <input id="add_mapAddress" placeholder="https://maps.google.com/...">
     </div>
     <div class="coords-row">
-      <div class="field"><label>Longitude (E)</label><input id="add_lng"></div>
-      <div class="field"><label>Latitude (F)</label><input id="add_lat"></div>
+      <div class="field"><label>Longitude (E)</label><input id="add_lng" inputmode="decimal"></div>
+      <div class="field"><label>Latitude (F)</label><input id="add_lat" inputmode="decimal"></div>
     </div>
     <div class="modal-actions">
-      <button class="btn gold" onclick="useCurrentLocation('add')">📍 Locația curentă</button>
+      <button class="btn gold" onclick="useCurrentLocation('add')">📍 Locația mea</button>
       <button class="btn gray" onclick="closeModal('addModal')">Anulează</button>
       <button class="btn green" onclick="submitAdd()">💾 Salvează</button>
     </div>
@@ -189,31 +283,49 @@
 </div>
 
 <!-- Modal Editare -->
-<div class="modal-backdrop" id="editModal">
-  <div class="modal">
+<div class="modal-backdrop" id="editModal" onclick="if(event.target===this)closeModal('editModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
     <h2>✏️ Editare magazin</h2>
     <input type="hidden" id="edit_rowIndex">
-    <div class="field"><label>Număr magazin (A)</label><input id="edit_number"></div>
-    <div class="field"><label>Nume magazin (B)</label><input id="edit_name"></div>
+    <div class="field"><label>Număr magazin (A)</label><input id="edit_number" inputmode="numeric"></div>
+    <div class="field"><label>Nume magazin (B) *</label><input id="edit_name"></div>
     <div class="field"><label>Adresă (C)</label><input id="edit_address"></div>
+    <div class="field">
+      <label>Regiune / Oraș (G)</label>
+      <input id="edit_region" list="regionList">
+    </div>
     <div class="field">
       <label>Adresă Google Maps / Waze (D)</label>
       <input id="edit_mapAddress">
     </div>
     <div class="coords-row">
-      <div class="field"><label>Longitude (E)</label><input id="edit_lng"></div>
-      <div class="field"><label>Latitude (F)</label><input id="edit_lat"></div>
+      <div class="field"><label>Longitude (E)</label><input id="edit_lng" inputmode="decimal"></div>
+      <div class="field"><label>Latitude (F)</label><input id="edit_lat" inputmode="decimal"></div>
     </div>
     <div class="modal-actions">
-      <button class="btn gold" onclick="useCurrentLocation('edit')">📍 Locația curentă</button>
+      <button class="btn gold" onclick="useCurrentLocation('edit')">📍 Locația mea</button>
       <button class="btn gray" onclick="closeModal('editModal')">Anulează</button>
       <button class="btn" onclick="submitEdit()">💾 Salvează</button>
     </div>
   </div>
 </div>
 
+<!-- Modal Navigare către app -->
+<div class="modal-backdrop" id="navModal" onclick="if(event.target===this)closeModal('navModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <h2>🧭 Deschide în aplicație</h2>
+    <p style="font-size:12px;color:#64748b;text-align:center;" id="navTargetLabel"></p>
+    <div class="nav-options" id="navOptions"></div>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn gray" onclick="closeModal('navModal')">Anulează</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
-<div id="loading">⏳ Vă rugăm așteptați...</div>
+<div id="loading"><div class="spinner"></div><span>Se încarcă...</span></div>
 
 <script>
 /* ============================================================
@@ -221,32 +333,27 @@
    ============================================================ */
 const API_URL = "https://script.google.com/macros/s/AKfycbyPOsBcnW2d8kHf1-vzT5ynRenybxocEc08wTw1MIvBJt2K9jWPXhKa0foPzUYLLe1oKQ/exec";
 
-/* ==================== Stare ==================== */
 let stores = [];
 let map, markersLayer;
-let currentMarker = null;
 
-/* ==================== Inițializare hartă ==================== */
+/* ---------- HARTĂ ---------- */
 function initMap() {
-  map = L.map('map', { zoomControl: true }).setView([44.4268, 26.1025], 12);
+  map = L.map('map', { zoomControl: true }).setView([45.9432, 24.9668], 7); // România
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; OpenStreetMap'
+    maxZoom: 19, attribution: '&copy; OpenStreetMap'
   }).addTo(map);
   markersLayer = L.layerGroup().addTo(map);
 }
 
-/* ==================== Funcții API ==================== */
+/* ---------- API ---------- */
 function apiGet(params) {
-  const qs = new URLSearchParams(params).toString();
-  return fetch(API_URL + "?" + qs, { method: 'GET', redirect: 'follow' })
-    .then(r => r.json());
+  return fetch(API_URL + "?" + new URLSearchParams(params).toString(),
+    { method: 'GET', redirect: 'follow' }).then(r => r.json());
 }
 function apiPost(params) {
-  const qs = new URLSearchParams(params).toString();
   return fetch(API_URL, {
     method: 'POST',
-    body: qs,
+    body: new URLSearchParams(params).toString(),
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
   }).then(r => r.json());
 }
@@ -254,41 +361,53 @@ function apiPost(params) {
 function showLoading(show) {
   document.getElementById('loading').classList.toggle('show', show);
 }
-function toast(msg, duration = 2200) {
+function toast(msg, duration = 2400) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
+  t.textContent = msg; t.classList.add('show');
   clearTimeout(t._t);
   t._t = setTimeout(() => t.classList.remove('show'), duration);
 }
 
-/* ==================== Încărcare ==================== */
+/* ---------- ÎNCĂRCARE ---------- */
 async function loadStores() {
   showLoading(true);
   try {
     const res = await apiGet({ action: 'getAll' });
     if (res.success) {
       stores = res.data;
+      populateRegions();
       renderList();
       renderMarkers();
-    } else {
-      toast('Eroare: ' + res.message);
-    }
+    } else toast('Eroare: ' + res.message);
   } catch (e) {
     toast('Eroare de conectare: ' + e.message);
-  } finally {
-    showLoading(false);
-  }
+  } finally { showLoading(false); }
 }
 
-/* ==================== Randare listă ==================== */
+/* ---------- POPULARE REGIUNI ---------- */
+function populateRegions() {
+  const regions = [...new Set(stores.map(s => (s.region || '').trim()).filter(Boolean))].sort();
+  const sel = document.getElementById('regionFilter');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Toate regiunile</option>' +
+    regions.map(r => `<option value="${r}">${r}</option>`).join('');
+  sel.value = current;
+
+  // Datalist pentru input-uri
+  document.getElementById('regionList').innerHTML =
+    regions.map(r => `<option value="${r}">`).join('');
+}
+
+/* ---------- RANDARE LISTĂ ---------- */
 function renderList() {
   const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const region = document.getElementById('regionFilter').value;
   const filter = document.getElementById('filterSelect').value;
 
   const filtered = stores.filter(s => {
-    const text = `${s.number} ${s.name} ${s.address} ${s.mapAddress}`.toLowerCase();
+    const text = `${s.number} ${s.name} ${s.address} ${s.mapAddress} ${s.region}`.toLowerCase();
     if (q && !text.includes(q)) return false;
+    if (region && (s.region || '').trim() !== region) return false;
     const hasLoc = s.lat && s.lng && !isNaN(parseFloat(s.lat)) && !isNaN(parseFloat(s.lng));
     if (filter === 'has' && !hasLoc) return false;
     if (filter === 'no' && hasLoc) return false;
@@ -301,7 +420,7 @@ function renderList() {
   const list = document.getElementById('storeList');
   list.innerHTML = '';
   if (!filtered.length) {
-    list.innerHTML = '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;">Niciun rezultat găsit</div>';
+    list.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;font-size:13px;">Niciun rezultat găsit</div>';
     return;
   }
 
@@ -311,15 +430,19 @@ function renderList() {
     div.className = 'store-card';
     div.dataset.row = s.rowIndex;
     div.innerHTML = `
-      <h3><span class="num">${s.number || '—'}</span>${s.name || 'Fără nume'}</h3>
+      <div class="top-row">
+        <span class="num">${s.number || '—'}</span>
+        <h3>${s.name || 'Fără nume'}</h3>
+      </div>
       <p>📍 ${s.address || 'Fără adresă'}</p>
-      ${s.mapAddress ? `<p style="font-size:11px;direction:ltr;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">🔗 ${s.mapAddress}</p>` : ''}
+      ${s.region ? `<span class="region-badge">🗺️ ${s.region}</span>` : ''}
       <div class="tags">
         <span class="tag ${hasLoc ? 'has' : 'no'}">${hasLoc ? '✓ Are locație' : '✗ Fără locație'}</span>
       </div>
-      <div style="margin-top:8px; display:flex; gap:6px;">
-        <button class="btn" style="padding:4px 10px; font-size:11px;" onclick="event.stopPropagation();focusStore(${s.rowIndex})">🗺️ Afișează</button>
-        <button class="btn gray" style="padding:4px 10px; font-size:11px;" onclick="event.stopPropagation();openEditModal(${s.rowIndex})">✏️ Editează</button>
+      <div class="card-actions">
+        <button class="btn" onclick="event.stopPropagation();focusStore(${s.rowIndex})">🗺️ Hartă</button>
+        <button class="btn green" onclick="event.stopPropagation();openNav(${s.rowIndex})" ${hasLoc ? '' : 'disabled style="opacity:.4;cursor:not-allowed"'}>🧭 Navighează</button>
+        <button class="btn gray" onclick="event.stopPropagation();openEditModal(${s.rowIndex})">✏️</button>
       </div>
     `;
     div.addEventListener('click', () => focusStore(s.rowIndex));
@@ -327,53 +450,48 @@ function renderList() {
   });
 }
 
-/* ==================== Randare markere ==================== */
+/* ---------- MARKERE ---------- */
 function renderMarkers() {
   markersLayer.clearLayers();
   stores.forEach(s => {
     const lat = parseFloat(s.lat), lng = parseFloat(s.lng);
     if (isNaN(lat) || isNaN(lng)) return;
-    const marker = L.marker([lat, lng]).addTo(markersLayer);
-    marker.bindPopup(`
-      <div style="direction:ltr;font-family:Segoe UI;min-width:180px;">
+    L.marker([lat, lng]).addTo(markersLayer).bindPopup(`
+      <div style="font-family:Segoe UI;min-width:180px;">
         <b>${s.number ? '#'+s.number+' ' : ''}${s.name || 'Fără nume'}</b><br>
         <small>${s.address || ''}</small><br>
-        <a href="https://www.google.com/maps?q=${lat},${lng}" target="_blank">🚗 Navighează</a>
+        ${s.region ? `<small>🗺️ ${s.region}</small><br>` : ''}
+        <a href="#" onclick="openNav(${s.rowIndex});return false;" style="display:inline-block;margin-top:6px;color:#2563eb;font-weight:600;">🧭 Navighează</a>
       </div>
     `);
-    marker.on('click', () => {
-      document.querySelectorAll('.store-card').forEach(c => c.classList.remove('active'));
-      const card = document.querySelector(`.store-card[data-row="${s.rowIndex}"]`);
-      if (card) card.classList.add('active');
-    });
   });
 }
 
-/* ==================== Focus magazin ==================== */
+/* ---------- FOCUS ---------- */
 function focusStore(rowIndex) {
   const s = stores.find(x => x.rowIndex === rowIndex);
   if (!s) return;
   const lat = parseFloat(s.lat), lng = parseFloat(s.lng);
   document.querySelectorAll('.store-card').forEach(c => c.classList.remove('active'));
   const card = document.querySelector(`.store-card[data-row="${rowIndex}"]`);
-  if (card) card.classList.add('active');
+  if (card) { card.classList.add('active'); card.scrollIntoView({behavior:'smooth',block:'nearest'}); }
 
   if (!isNaN(lat) && !isNaN(lng)) {
     map.setView([lat, lng], 16);
+    if (window.innerWidth <= 768) document.getElementById('sidePanel').classList.remove('open');
   } else {
-    toast('Acest magazin nu are locație înregistrată. Folosiți butonul Editează.');
+    toast('Acest magazin nu are locație. Folosiți Editează.');
   }
-  if (window.innerWidth <= 720) document.getElementById('sidePanel').classList.remove('open');
 }
 
-/* ==================== Comutare panou (mobil) ==================== */
+/* ---------- TOGGLE PANEL (mobil) ---------- */
 function togglePanel() {
   document.getElementById('sidePanel').classList.toggle('open');
 }
 
-/* ==================== Modale ==================== */
+/* ---------- MODALE ---------- */
 function openAddModal() {
-  ['add_number','add_name','add_address','add_mapAddress','add_lng','add_lat']
+  ['add_number','add_name','add_address','add_region','add_mapAddress','add_lng','add_lat']
     .forEach(id => document.getElementById(id).value = '');
   document.getElementById('addModal').classList.add('open');
 }
@@ -384,6 +502,7 @@ function openEditModal(rowIndex) {
   document.getElementById('edit_number').value = s.number || '';
   document.getElementById('edit_name').value = s.name || '';
   document.getElementById('edit_address').value = s.address || '';
+  document.getElementById('edit_region').value = s.region || '';
   document.getElementById('edit_mapAddress').value = s.mapAddress || '';
   document.getElementById('edit_lng').value = s.lng || '';
   document.getElementById('edit_lat').value = s.lat || '';
@@ -393,12 +512,9 @@ function closeModal(id) {
   document.getElementById(id).classList.remove('open');
 }
 
-/* ==================== Locația curentă ==================== */
+/* ---------- GPS ---------- */
 function useCurrentLocation(prefix) {
-  if (!navigator.geolocation) {
-    toast('GPS nu este acceptat');
-    return;
-  }
+  if (!navigator.geolocation) { toast('GPS nu este acceptat'); return; }
   toast('Se obține locația...');
   navigator.geolocation.getCurrentPosition(
     pos => {
@@ -415,12 +531,13 @@ function useCurrentLocation(prefix) {
   );
 }
 
-/* ==================== Trimitere adăugare ==================== */
+/* ---------- TRIMITERE ---------- */
 async function submitAdd() {
   const data = {
     number: document.getElementById('add_number').value,
     name: document.getElementById('add_name').value,
     address: document.getElementById('add_address').value,
+    region: document.getElementById('add_region').value,
     mapAddress: document.getElementById('add_mapAddress').value,
     lng: document.getElementById('add_lng').value,
     lat: document.getElementById('add_lat').value
@@ -438,13 +555,13 @@ async function submitAdd() {
   finally { showLoading(false); }
 }
 
-/* ==================== Trimitere editare ==================== */
 async function submitEdit() {
   const data = {
     rowIndex: parseInt(document.getElementById('edit_rowIndex').value),
     number: document.getElementById('edit_number').value,
     name: document.getElementById('edit_name').value,
     address: document.getElementById('edit_address').value,
+    region: document.getElementById('edit_region').value,
     mapAddress: document.getElementById('edit_mapAddress').value,
     lng: document.getElementById('edit_lng').value,
     lat: document.getElementById('edit_lat').value
@@ -457,17 +574,94 @@ async function submitEdit() {
       toast('✅ Salvat');
       closeModal('editModal');
       await loadStores();
-      map.setView([parseFloat(data.lat) || 44.4268, parseFloat(data.lng) || 26.1025], 16);
+      const lat = parseFloat(data.lat), lng = parseFloat(data.lng);
+      if (!isNaN(lat) && !isNaN(lng)) map.setView([lat, lng], 16);
     } else toast('Eroare: ' + res.message);
   } catch (e) { toast('Eroare: ' + e.message); }
   finally { showLoading(false); }
 }
 
-/* ==================== Evenimente căutare ==================== */
+/* ============================================================
+   🧭 NAVIGARE CĂTRE APP-URI EXTERNE
+   ============================================================ */
+let navStore = null;
+
+function openNav(rowIndex) {
+  const s = stores.find(x => x.rowIndex === rowIndex);
+  if (!s) return;
+  const lat = parseFloat(s.lat), lng = parseFloat(s.lng);
+  if (isNaN(lat) || isNaN(lng)) { toast('Magazinul nu are locație'); return; }
+
+  navStore = { lat, lng, name: s.name || '' };
+  document.getElementById('navTargetLabel').textContent =
+    `${s.name || ''} — ${s.address || ''}`;
+
+  const label = encodeURIComponent(s.name || 'Magazin');
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+  const options = [
+    {
+      icon: '🗺️', bg: '#dbeafe',
+      title: 'Google Maps',
+      desc: 'Deschide în Google Maps',
+      url: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`
+    },
+    {
+      icon: '🚗', bg: '#dcfce7',
+      title: 'Waze',
+      desc: 'Deschide în Waze',
+      url: `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`
+    }
+  ];
+
+  if (isIOS) {
+    options.push({
+      icon: '🍎', bg: '#f1f5f9',
+      title: 'Apple Maps',
+      desc: 'Deschide în Apple Maps',
+      url: `https://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`
+    });
+  }
+
+  options.push({
+    icon: '📋', bg: '#fef3c7',
+    title: 'Copiază coordonatele',
+    desc: `${lat}, ${lng}`,
+    action: 'copy'
+  });
+
+  const container = document.getElementById('navOptions');
+  container.innerHTML = options.map((o, i) => `
+    <a class="nav-option" ${o.url ? `href="${o.url}" target="_blank" rel="noopener"` : `onclick="copyCoords();return false;"`} data-idx="${i}">
+      <div class="nav-icon" style="background:${o.bg}">${o.icon}</div>
+      <div style="flex:1;">
+        <div style="font-weight:600;">${o.title}</div>
+        <div style="font-size:11px;color:#64748b;">${o.desc}</div>
+      </div>
+      <div style="color:#94a3b8;">›</div>
+    </a>
+  `).join('');
+
+  document.getElementById('navModal').classList.add('open');
+}
+
+function copyCoords() {
+  if (!navStore) return;
+  const txt = `${navStore.lat}, ${navStore.lng}`;
+  navigator.clipboard.writeText(txt).then(() => {
+    toast('✅ Coordonate copiate');
+    closeModal('navModal');
+  }).catch(() => {
+    prompt('Copiați manual:', txt);
+  });
+}
+
+/* ---------- EVENIMENTE ---------- */
 document.getElementById('searchInput').addEventListener('input', renderList);
+document.getElementById('regionFilter').addEventListener('change', renderList);
 document.getElementById('filterSelect').addEventListener('change', renderList);
 
-/* ==================== Pornire ==================== */
+/* ---------- PORNIRE ---------- */
 initMap();
 loadStores();
 </script>
