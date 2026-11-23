@@ -2,716 +2,515 @@
 <html lang="ro">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#1e3a8a">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0e1b2c">
 <title>Magazine</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  body {
-    font-family: -apple-system, Roboto, Tahoma, sans-serif;
-    background: #f1f5f9; color: #0f172a;
-    height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
-  }
-  header {
-    background: linear-gradient(135deg,#1e3a8a,#2563eb);
-    color: white; padding: 12px 14px;
-    display: flex; align-items: center; gap: 10px;
-    padding-top: max(12px, env(safe-area-inset-top));
-    flex-shrink: 0;
-  }
-  header h1 { font-size: 16px; flex: 1; }
-  .add-btn {
-    background: rgba(255,255,255,.2); border: none; color: white;
-    width: 40px; height: 40px; border-radius: 10px;
-    font-size: 22px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .add-btn:active { background: rgba(255,255,255,.4); }
+:root{
+  --bg:#eef1f5; --surface:#fff; --ink:#0e1b2c; --muted:#5d6b7e; --line:#e3e8ef;
+  --accent:#0a8f7a; --accent-ink:#fff; --soft:#e0f5f0; --warn:#b4372b; --warnsoft:#fdeceb;
+  --shadow:0 8px 28px rgba(14,27,44,.16); --sh:46dvh;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0b1220; --surface:#131c2e; --ink:#e8eef7; --muted:#92a0b5; --line:#22304a;
+  --accent:#2dd4b0; --accent-ink:#06231d; --soft:#103a34; --warn:#ff8a7a; --warnsoft:#3a1d1b;
+  --shadow:0 8px 28px rgba(0,0,0,.5);
+}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:'Plus Jakarta Sans',-apple-system,Roboto,Tahoma,sans-serif;background:var(--bg);color:var(--ink);overflow:hidden;position:fixed;inset:0}
+button,input{font-family:inherit;color:inherit}
+button{cursor:pointer;border:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
-  .search-box {
-    background: white; padding: 10px 14px;
-    display: flex; gap: 8px; flex-shrink: 0;
-    box-shadow: 0 1px 3px rgba(0,0,0,.08); z-index: 10;
-  }
-  .search-box input {
-    flex: 1; padding: 11px 14px; border: 1.5px solid #e2e8f0;
-    border-radius: 10px; font-size: 15px; font-family: inherit;
-    background: #f8fafc;
-  }
-  .search-box input:focus { outline: none; border-color: #2563eb; background: white; }
-  .search-box select {
-    padding: 11px 8px; border: 1.5px solid #e2e8f0;
-    border-radius: 10px; font-size: 13px; font-family: inherit;
-    background: #f8fafc; max-width: 120px;
-  }
+#map{position:absolute;inset:0;z-index:0}
+.leaflet-control-attribution{font-size:9px;opacity:.7}
 
-  #map { height: 220px; width: 100%; flex-shrink: 0; border-bottom: 2px solid #e2e8f0; }
-  #countBar {
-    padding: 8px 14px; background: #f8fafc; font-size: 12px;
-    color: #475569; border-bottom: 1px solid #e2e8f0; flex-shrink: 0;
-  }
-  #list { flex: 1; overflow-y: auto; background: white; -webkit-overflow-scrolling: touch; }
+/* top bar */
+#top{position:absolute;z-index:600;left:12px;right:12px;top:max(12px,env(safe-area-inset-top));display:flex;flex-direction:column;gap:10px;pointer-events:none}
+#top>*{pointer-events:auto}
+.bar{display:flex;gap:8px}
+.search{flex:1;display:flex;align-items:center;gap:10px;background:var(--surface);border-radius:16px;padding:0 14px;height:50px;box-shadow:var(--shadow)}
+.search svg{flex-shrink:0;color:var(--muted)}
+.search input{flex:1;border:none;background:none;font-size:15px;font-weight:500;min-width:0}
+.search input:focus{outline:none}
+.search input::placeholder{color:var(--muted)}
+.clear{display:none;background:var(--line);width:22px;height:22px;border-radius:50%;color:var(--muted);font-size:13px;line-height:22px}
+.clear.on{display:block}
+.add{width:50px;height:50px;border-radius:16px;background:var(--accent);color:var(--accent-ink);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;transition:transform .15s}
+.add:active{transform:scale(.92)}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 2px 6px;margin:0 -12px;padding-inline:12px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;background:var(--surface);color:var(--ink);padding:8px 14px;border-radius:999px;font-size:13px;font-weight:600;box-shadow:0 2px 8px rgba(14,27,44,.12);transition:background .15s}
+.chip.on{background:var(--ink);color:var(--bg)}
 
-  .card { padding: 14px; border-bottom: 1px solid #e2e8f0; cursor: pointer; }
-  .card:active { background: #f1f5f9; }
-  .card.active { background: #dbeafe; border-left: 4px solid #2563eb; }
-  .card-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
-  .card-line { font-size: 13px; color: #475569; margin-top: 4px; display: flex; gap: 6px; }
-  .city-chip {
-    display: inline-block; font-size: 11px; padding: 3px 9px;
-    background: #ede9fe; color: #6d28d9; border-radius: 10px;
-    margin-top: 6px; font-weight: 600;
-  }
-  .status {
-    display: inline-block; font-size: 11px; padding: 3px 9px;
-    border-radius: 10px; margin-top: 6px; font-weight: 600;
-  }
-  .status.has { background: #dcfce7; color: #166534; }
-  .status.no { background: #fee2e2; color: #991b1b; }
-  .card-actions { display: flex; gap: 8px; margin-top: 12px; }
-  .card-actions button {
-    flex: 1; padding: 10px; font-size: 13px; font-weight: 600;
-    border: none; border-radius: 8px; cursor: pointer; font-family: inherit;
-  }
-  .btn-map { background: #dbeafe; color: #1e40af; }
-  .btn-nav { background: #16a34a; color: white; }
-  .btn-edit { background: #f1f5f9; color: #475569; }
-  .card-actions button:active { opacity: .7; }
-  .card-actions button:disabled { opacity: .4; }
+/* map fabs */
+.fab{position:absolute;z-index:550;right:12px;bottom:calc(var(--sh) + 14px);width:46px;height:46px;border-radius:14px;background:var(--surface);color:var(--ink);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;transition:bottom .28s cubic-bezier(.2,.8,.2,1)}
+.fab:active{transform:scale(.92)}
+.fab.dragging{transition:none}
 
-  .modal-bg {
-    position: fixed; inset: 0; background: rgba(15,23,42,.6);
-    display: none; z-index: 1000; align-items: flex-end;
-  }
-  .modal-bg.open { display: flex; }
-  .modal {
-    background: white; width: 100%;
-    border-radius: 20px 20px 0 0;
-    padding: 20px 18px;
-    padding-bottom: max(20px, env(safe-area-inset-bottom));
-    max-height: 92dvh; overflow-y: auto; animation: slideUp .25s;
-  }
-  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-  .modal-handle { width: 40px; height: 4px; background: #cbd5e1; border-radius: 2px; margin: 0 auto 16px; }
-  .modal h2 { font-size: 17px; margin-bottom: 16px; text-align: center; }
-  .field { margin-bottom: 12px; }
-  .field label { display: block; font-size: 12px; color: #475569; margin-bottom: 5px; font-weight: 600; }
-  .field input {
-    width: 100%; padding: 12px 14px;
-    border: 1.5px solid #e2e8f0; border-radius: 10px;
-    font-family: inherit; font-size: 15px; background: #f8fafc;
-  }
-  .field input:focus { outline: none; border-color: #2563eb; background: white; }
-  .hint { font-size: 11px; color: #64748b; margin-top: 5px; line-height: 1.5; }
-  .modal-actions { display: flex; gap: 8px; margin-top: 18px; }
-  .modal-actions button {
-    flex: 1; padding: 13px; font-size: 14px; font-weight: 700;
-    border: none; border-radius: 10px; cursor: pointer; font-family: inherit;
-  }
-  .btn-cancel { background: #e2e8f0; color: #475569; }
-  .btn-save { background: #16a34a; color: white; }
-  .btn-save:disabled { opacity: .5; }
+/* pins */
+.pin{background:none;border:none}
+.pin i{display:block;width:26px;height:26px;background:var(--accent);border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 3px 8px rgba(0,0,0,.35);transition:transform .2s,background .2s}
+.pin.sel i{background:#ef4444;transform:rotate(-45deg) scale(1.3)}
+.me{width:16px;height:16px;border-radius:50%;background:#2f6bff;border:3px solid #fff;box-shadow:0 0 0 6px rgba(47,107,255,.25)}
 
-  /* Status card în modal */
-  .preview-box {
-    background: #f0fdf4; border: 1.5px solid #86efac;
-    border-radius: 10px; padding: 12px; margin-bottom: 12px;
-    font-size: 13px; color: #166534;
-  }
-  .preview-box.error {
-    background: #fef2f2; border-color: #fca5a5; color: #991b1b;
-  }
-  .preview-box.loading {
-    background: #eff6ff; border-color: #93c5fd; color: #1e40af;
-  }
-  .preview-box b { font-weight: 700; }
+/* sheet */
+#sheet{position:absolute;z-index:500;left:0;right:0;bottom:0;height:var(--sh);background:var(--surface);border-radius:24px 24px 0 0;box-shadow:0 -10px 34px rgba(14,27,44,.2);display:flex;flex-direction:column;transition:height .28s cubic-bezier(.2,.8,.2,1)}
+#sheet.dragging{transition:none}
+#grab{touch-action:none;padding:10px 18px 12px;cursor:grab;flex-shrink:0}
+#grab .h{width:42px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 10px}
+#grab .t{display:flex;justify-content:space-between;align-items:baseline}
+#grab b{font-size:16px;font-weight:800}
+#grab span{font-size:12px;color:var(--muted);font-weight:500}
+#list{flex:1;overflow-y:auto;padding:0 10px max(16px,env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 
-  .nav-option {
-    display: flex; align-items: center; gap: 14px;
-    padding: 15px 16px; background: #f8fafc;
-    border: 1.5px solid #e2e8f0; border-radius: 12px;
-    margin-bottom: 10px; text-decoration: none;
-    color: #0f172a; font-size: 15px;
-  }
-  .nav-option:active { background: #dbeafe; border-color: #2563eb; }
-  .nav-option .nicon {
-    width: 42px; height: 42px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px; flex-shrink: 0;
-  }
-  .nav-option .ntext { flex: 1; font-weight: 600; }
+.card{border-radius:16px;padding:12px;margin-bottom:6px;cursor:pointer;transition:background .15s}
+.card:active{background:var(--bg)}
+.card.active{background:var(--soft)}
+.row{display:flex;align-items:center;gap:12px}
+.ico{width:44px;height:44px;border-radius:14px;background:var(--soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;flex-shrink:0}
+.card.active .ico{background:var(--accent);color:var(--accent-ink)}
+.meta{flex:1;min-width:0}
+.nm{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sub{font-size:12.5px;color:var(--muted);margin-top:3px;display:flex;gap:8px;align-items:center}
+.nolo{background:var(--warnsoft);color:var(--warn);padding:2px 8px;border-radius:8px;font-weight:600;font-size:11.5px}
+.acts{display:none;gap:8px;margin-top:12px}
+.card.active .acts{display:flex}
+.acts button{height:44px;border-radius:12px;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;gap:7px}
+.acts .go{flex:1;background:var(--accent);color:var(--accent-ink)}
+.acts .go:disabled{opacity:.4}
+.acts .ed{width:48px;background:var(--surface);color:var(--ink);border:1.5px solid var(--line)}
+.acts button:active{transform:scale(.96)}
 
-  #toast {
-    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-    background: #0f172a; color: white; padding: 12px 22px;
-    border-radius: 12px; font-size: 14px; opacity: 0;
-    transition: opacity .3s; pointer-events: none;
-    z-index: 2000; max-width: 90vw; text-align: center;
-  }
-  #toast.show { opacity: 1; }
+.sk{height:68px;border-radius:16px;margin-bottom:8px;background:linear-gradient(90deg,var(--bg) 25%,var(--line) 50%,var(--bg) 75%);background-size:200% 100%;animation:sk 1.2s infinite}
+@keyframes sk{to{background-position:-200% 0}}
+.empty{text-align:center;padding:36px 20px;color:var(--muted);font-size:14px;line-height:1.6}
+.empty button{margin-top:14px;background:var(--accent);color:var(--accent-ink);padding:12px 20px;border-radius:12px;font-weight:700}
 
-  #loading {
-    position: fixed; inset: 0; background: rgba(255,255,255,.85);
-    display: none; align-items: center; justify-content: center;
-    z-index: 3000; flex-direction: column; gap: 14px;
-  }
-  #loading.show { display: flex; }
-  .spinner {
-    width: 40px; height: 40px; border: 4px solid #e2e8f0;
-    border-top-color: #2563eb; border-radius: 50%;
-    animation: spin .8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
+/* dialogs */
+.scrim{position:fixed;inset:0;z-index:1000;background:rgba(8,14,26,.55);display:none;align-items:flex-end;justify-content:center}
+.scrim.open{display:flex}
+.dlg{background:var(--surface);width:100%;max-width:520px;border-radius:26px 26px 0 0;padding:10px 18px max(20px,env(safe-area-inset-bottom));max-height:92dvh;overflow-y:auto;animation:up .26s cubic-bezier(.2,.8,.2,1)}
+@keyframes up{from{transform:translateY(100%)}}
+.dlg .h{width:42px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 14px}
+.dlg h2{font-size:19px;font-weight:800;margin-bottom:16px}
+.fld{margin-bottom:14px}
+.fld label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+.inp{display:flex;gap:8px}
+.inp input{flex:1;min-width:0;height:50px;padding:0 14px;border:1.5px solid var(--line);border-radius:14px;font-size:16px;background:var(--bg)}
+.inp input:focus{outline:none;border-color:var(--accent);background:var(--surface)}
+.mini{height:50px;padding:0 14px;border-radius:14px;background:var(--soft);color:var(--accent);font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.hint{font-size:12px;color:var(--muted);margin-top:6px}
+.gpsbtn{width:100%;height:50px;border-radius:14px;background:var(--bg);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;border:1.5px dashed var(--line)}
+.pv{display:none;border-radius:14px;padding:13px 14px;margin-bottom:14px;font-size:13.5px;line-height:1.5;gap:12px;align-items:center}
+.pv.on{display:flex}
+.pv .pi{font-size:22px}
+.pv.ok{background:var(--soft);color:var(--ink)}
+.pv.err{background:var(--warnsoft);color:var(--warn)}
+.pv.ld{background:var(--bg);color:var(--muted)}
+.pv small{color:var(--muted);display:block;direction:ltr}
+.foot{display:flex;gap:10px}
+.foot button{height:52px;border-radius:15px;font-weight:700;font-size:15px}
+.cancel{flex:1;background:var(--bg)}
+.save{flex:2;background:var(--accent);color:var(--accent-ink)}
+.save:disabled{opacity:.35}
+.nav{display:flex;align-items:center;gap:14px;padding:14px;border-radius:16px;background:var(--bg);margin-bottom:10px;text-decoration:none;color:var(--ink);font-weight:700;font-size:15px}
+.nav:active{background:var(--soft)}
+.nav .ni{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--surface)}
+
+#toast{position:fixed;left:50%;top:max(16px,env(safe-area-inset-top));transform:translate(-50%,-90px);background:var(--ink);color:var(--bg);padding:12px 20px;border-radius:14px;font-size:14px;font-weight:600;z-index:3000;transition:transform .3s cubic-bezier(.2,.8,.2,1);max-width:90vw;text-align:center;box-shadow:var(--shadow)}
+#toast.show{transform:translate(-50%,0)}
+
+@media (min-width:820px){
+  #sheet{top:0;right:auto;width:400px;height:100%!important;border-radius:0;box-shadow:8px 0 30px rgba(14,27,44,.15)}
+  #grab{cursor:default}#grab .h{display:none}
+  #top{left:412px;right:12px;max-width:560px}
+  .fab{bottom:24px!important}
+  .scrim{align-items:center}.dlg{border-radius:26px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
 <body>
 
-<header>
-  <h1>🏪 Magazine</h1>
-  <button class="add-btn" onclick="openAdd()">+</button>
-</header>
-
-<div class="search-box">
-  <input type="text" id="search" placeholder="🔍 Nume magazin...">
-  <select id="cityFilter">
-    <option value="">Toate orașele</option>
-  </select>
-</div>
-
 <div id="map"></div>
-<div id="countBar"><span id="count">Se încarcă...</span></div>
-<div id="list"></div>
 
-<!-- MODAL ADAUGĂ -->
-<div class="modal-bg" id="addModal" onclick="if(event.target===this)closeM('addModal')">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <h2>➕ Magazin nou</h2>
-
-    <div class="field">
-      <label>Nume magazin *</label>
-      <input id="a_name" placeholder="ex: Mega Image Lipscani">
-    </div>
-
-    <div class="field">
-      <label>Locație (link Google Maps / Waze / Apple Maps)</label>
-      <input id="a_link" placeholder="Lipiți link sau folosiți butonul de jos">
-      <div class="hint">Acceptă: google.com/maps, goo.gl/maps, waze.com, maps.apple.com</div>
-    </div>
-
-    <div id="a_preview" style="display:none;"></div>
-
-    <button class="btn-gps" onclick="gps('a')" style="background:#d97706;color:white;padding:13px;border:none;border-radius:10px;width:100%;font-size:14px;font-weight:700;margin-bottom:12px;font-family:inherit;cursor:pointer;">
-      📍 Folosește locația mea acum
+<div id="top">
+  <div class="bar">
+    <label class="search">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input type="search" id="search" placeholder="Caută magazin" autocomplete="off" enterkeyhint="search">
+      <button class="clear" id="clear" aria-label="Șterge">✕</button>
+    </label>
+    <button class="add" onclick="openForm('add')" aria-label="Magazin nou">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
     </button>
+  </div>
+  <div class="chips" id="chips"></div>
+</div>
 
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeM('addModal')">Anulează</button>
-      <button class="btn-save" id="a_saveBtn" onclick="saveAdd()">💾 Salvează</button>
+<button class="fab" id="locate" aria-label="Locația mea">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="3.5"/><circle cx="12" cy="12" r="8"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/></svg>
+</button>
+
+<section id="sheet">
+  <div id="grab"><div class="h"></div><div class="t"><b id="count">Magazine</b><span id="total"></span></div></div>
+  <div id="list"></div>
+</section>
+
+<!-- Add / Edit -->
+<div class="scrim" id="formModal">
+  <div class="dlg" role="dialog" aria-modal="true">
+    <div class="h"></div>
+    <h2 id="fTitle">Magazin nou</h2>
+    <div class="fld">
+      <label for="f_name">Nume magazin</label>
+      <div class="inp"><input id="f_name" placeholder="ex: Mega Image Lipscani" autocomplete="off"></div>
+    </div>
+    <div class="fld">
+      <label for="f_link">Link locație</label>
+      <div class="inp">
+        <input id="f_link" inputmode="url" placeholder="Lipește linkul aici" autocomplete="off">
+        <button class="mini" id="pasteBtn" type="button">📋 Lipește</button>
+      </div>
+      <div class="hint">Google Maps, Waze, Apple Maps sau coordonate. Locația se detectează automat.</div>
+    </div>
+    <div class="pv" id="f_pv"></div>
+    <button class="gpsbtn" type="button" id="gpsBtn">📍 Folosește locația mea acum</button>
+    <div class="foot">
+      <button class="cancel" onclick="closeM('formModal')">Anulează</button>
+      <button class="save" id="saveBtn" disabled>Salvează</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL EDITEAZĂ -->
-<div class="modal-bg" id="editModal" onclick="if(event.target===this)closeM('editModal')">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <h2>✏️ Editează magazin</h2>
-    <input type="hidden" id="e_row">
-
-    <div class="field">
-      <label>Nume magazin *</label>
-      <input id="e_name">
-    </div>
-
-    <div class="field">
-      <label>Locație (link nou)</label>
-      <input id="e_link" placeholder="Lăsați gol pentru a păstra locația existentă">
-    </div>
-
-    <div id="e_preview" style="display:none;"></div>
-
-    <button class="btn-gps" onclick="gps('e')" style="background:#d97706;color:white;padding:13px;border:none;border-radius:10px;width:100%;font-size:14px;font-weight:700;margin-bottom:12px;font-family:inherit;cursor:pointer;">
-      📍 Folosește locația mea acum
-    </button>
-
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeM('editModal')">Anulează</button>
-      <button class="btn-save" onclick="saveEdit()">💾 Salvează</button>
-    </div>
+<!-- Navigate -->
+<div class="scrim" id="navModal" onclick="if(event.target===this)closeM('navModal')">
+  <div class="dlg">
+    <div class="h"></div>
+    <h2 id="navTitle">Navighează</h2>
+    <a class="nav" id="navGoogle" target="_blank" rel="noopener"><span class="ni">🗺️</span>Google Maps</a>
+    <a class="nav" id="navWaze" target="_blank" rel="noopener"><span class="ni">🚗</span>Waze</a>
+    <a class="nav" id="navApple" target="_blank" rel="noopener" style="display:none"><span class="ni">🍎</span>Apple Maps</a>
+    <div class="foot"><button class="cancel" onclick="closeM('navModal')">Închide</button></div>
   </div>
 </div>
 
-<!-- MODAL NAVIGARE -->
-<div class="modal-bg" id="navModal" onclick="if(event.target===this)closeM('navModal')">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <h2>🧭 Deschide în</h2>
-    <a class="nav-option" id="navGoogle" target="_blank" rel="noopener">
-      <div class="nicon" style="background:#dbeafe;">🗺️</div>
-      <div class="ntext">Google Maps</div>
-    </a>
-    <a class="nav-option" id="navWaze" target="_blank" rel="noopener">
-      <div class="nicon" style="background:#dcfce7;">🚗</div>
-      <div class="ntext">Waze</div>
-    </a>
-    <a class="nav-option" id="navApple" target="_blank" rel="noopener" style="display:none;">
-      <div class="nicon" style="background:#f1f5f9;">🍎</div>
-      <div class="ntext">Apple Maps</div>
-    </a>
-    <button class="btn-cancel" style="width:100%;padding:13px;border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;" onclick="closeM('navModal')">Închide</button>
-  </div>
-</div>
-
-<div id="toast"></div>
-<div id="loading"><div class="spinner"></div></div>
+<div id="toast" role="status"></div>
 
 <script>
 /* ⚠️ PUNEȚI AICI LINKUL APPS SCRIPT */
 const API_URL = "https://script.google.com/macros/s/AKfycbyPOsBcnW2d8kHf1-vzT5ynRenybxocEc08wTw1MIvBJt2K9jWPXhKa0foPzUYLLe1oKQ/exec";
 
-let stores = [];
-let map, markersLayer;
-let navTarget = null;
-let pendingLocation = { add: null, edit: null }; // {lat, lng, city, mapLink}
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const wide = () => window.matchMedia('(min-width:820px)').matches;
 
-/* ============================================================
-   🔧 PARSARE COORDONATE (rezolvă problema cu virgula)
-   ============================================================ */
+let stores = [], map, tiles, pins = {}, meMarker;
+let selected = null, cityFilter = '';
+let form = { mode:'add', row:null, loc:null };
+let snap = 1;
+
+/* ---------- coordonate (neschimbat) ---------- */
 function parseCoord(val, type) {
   if (val === null || val === undefined) return null;
-  let s = String(val).trim().replace(',', '.').replace(/\s+/g, '');
-  const num = parseFloat(s);
+  const num = parseFloat(String(val).trim().replace(',', '.').replace(/\s+/g, ''));
   if (isNaN(num)) return null;
   if (type === 'lat' && (num < -90 || num > 90)) return null;
   if (type === 'lng' && (num < -180 || num > 180)) return null;
   return num;
 }
 function getCoords(s) {
-  let lat = parseCoord(s.lat, 'lat');
-  let lng = parseCoord(s.lng, 'lng');
-  if (lat !== null && lng !== null && Math.abs(lat) > 90 && Math.abs(lng) <= 90) {
-    [lat, lng] = [lng, lat];
-  }
-  if (lat === null || lng === null) return null;
-  return [lat, lng];
+  let lat = parseCoord(s.lat, 'lat'), lng = parseCoord(s.lng, 'lng');
+  if (lat !== null && lng !== null && Math.abs(lat) > 90 && Math.abs(lng) <= 90) [lat, lng] = [lng, lat];
+  return (lat === null || lng === null) ? null : [lat, lng];
 }
-
-/* ============================================================
-   🔗 EXTRAGERE COORDONATE DIN ORICE LINK
-   Acceptă: Google Maps, goo.gl/maps, Waze, Apple Maps
-   ============================================================ */
-async function extractCoordsFromLink(url) {
-  if (!url) return null;
-  url = url.trim();
-
-  // 1. Coordonate directe în URL (pattern simplu)
-  // Ex: @44.4268,26.1025 sau ?q=44.4268,26.1025 sau /44.4268,26.1025
-  const patterns = [
-    /@(-?\d+\.?\d*),(-?\d+\.?\d*)/,           // google maps @lat,lng
-    /[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/,      // ?q=lat,lng
-    /[?&]ll=(-?\d+\.?\d*),(-?\d+\.?\d*)/,     // waze ll=
-    /[?&]center=(-?\d+\.?\d*),(-?\d+\.?\d*)/, // center=
-    /!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/,       // google maps data !3d!4d
-    /\/place\/(-?\d+\.?\d*),(-?\d+\.?\d*)/,   // /place/lat,lng
-    /^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/     // direct lat,lng
-  ];
-
-  for (const p of patterns) {
-    const m = url.match(p);
+const PATTERNS = [
+  /@(-?\d+\.?\d*),(-?\d+\.?\d*)/, /[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/, /[?&]ll=(-?\d+\.?\d*),(-?\d+\.?\d*)/,
+  /[?&]center=(-?\d+\.?\d*),(-?\d+\.?\d*)/, /!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/,
+  /\/place\/(-?\d+\.?\d*),(-?\d+\.?\d*)/, /^(-?\d+\.?\d*)\s*[,;]\s*(-?\d+\.?\d*)$/
+];
+function matchCoords(text) {
+  for (const p of PATTERNS) {
+    const m = text.match(p);
     if (m) {
-      const lat = parseFloat(m[1]);
-      const lng = parseFloat(m[2]);
-      if (!isNaN(lat) && !isNaN(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
-        return { lat, lng };
-      }
+      const lat = parseFloat(m[1]), lng = parseFloat(m[2]);
+      if (!isNaN(lat) && !isNaN(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
     }
   }
-
-  // 2. Linkuri scurte (goo.gl, maps.app.goo.gl, waze.com/ul, apple.co)
-  // — trebuie urmărite (redirect)
-  const isShort = /goo\.gl|maps\.app\.goo\.gl|waze\.com\/ul|apple\.co|maps\.apple\.com/i.test(url);
-  if (isShort) {
-    try {
-      // Folosim un serviciu de expandare CORS-friendly
-      const expandUrl = `https://unshorten.me/api/v2/unshorten?url=${encodeURIComponent(url)}`;
-      // Alternativ: încercăm direct fetch cu no-cors (nu funcționează întotdeauna)
-      // Folosim r.jina.ai ca proxy pentru redirect
-      const proxyUrl = `https://r.jina.ai/${url}`;
-      const res = await fetch(proxyUrl, { method: 'GET' });
-      // Nu putem citi mereu body-ul, dar URL-ul original poate fi în header
-      // Încercăm din nou pattern-urile pe URL-ul redirectat
-      const text = await res.text().catch(() => '');
-
-      // Extragem din text orice coordonate
-      for (const p of patterns) {
-        const m = text.match(p);
-        if (m) {
-          const lat = parseFloat(m[1]);
-          const lng = parseFloat(m[2]);
-          if (!isNaN(lat) && !isNaN(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
-            return { lat, lng };
-          }
-        }
-      }
-    } catch(e) {
-      console.warn('Eroare expandare link scurt:', e);
-    }
-  }
-
   return null;
 }
-
-/* ============================================================
-   🏙️ REVERSE GEOCODING: coordonate → oraș (Nominatim)
-   ============================================================ */
+async function extractCoordsFromLink(url) {
+  url = (url || '').trim();
+  if (!url) return null;
+  const direct = matchCoords(url);
+  if (direct) return direct;
+  if (/goo\.gl|maps\.app\.goo\.gl|waze\.com\/ul|apple\.co|maps\.apple\.com/i.test(url)) {
+    try {
+      const res = await fetch(`https://r.jina.ai/${url}`);
+      return matchCoords(await res.text().catch(() => ''));
+    } catch(e) { console.warn(e); }
+  }
+  return null;
+}
 async function reverseGeocode(lat, lng) {
   try {
-    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`;
-    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
-    const data = await res.json();
-    if (!data.address) return '';
-    const a = data.address;
-    return a.city || a.town || a.village || a.municipality || a.county || a.state || '';
-  } catch(e) {
-    return '';
-  }
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`, { headers:{Accept:'application/json'} });
+    const a = (await res.json()).address;
+    return a ? (a.city || a.town || a.village || a.municipality || a.county || a.state || '') : '';
+  } catch(e) { return ''; }
 }
 
-/* ============================================================
-   🔄 PROCESARE COMPLETĂ: link → coords + oraș
-   ============================================================ */
-async function processLocation(input, prefix, previewEl) {
-  previewEl.style.display = 'block';
-  previewEl.className = 'preview-box loading';
-  previewEl.innerHTML = '⏳ Se procesează locația...';
-
-  let coords = null;
-
-  // Verificăm dacă e coordonată directă
-  const directMatch = input.trim().match(/^(-?\d+\.?\d*)\s*[,;]\s*(-?\d+\.?\d*)$/);
-  if (directMatch) {
-    coords = { lat: parseFloat(directMatch[1]), lng: parseFloat(directMatch[2]) };
-  } else {
-    coords = await extractCoordsFromLink(input);
-  }
-
-  if (!coords) {
-    previewEl.className = 'preview-box error';
-    previewEl.innerHTML = '❌ Nu am putut extrage coordonatele. Verificați linkul.';
-    pendingLocation[prefix] = null;
-    return;
-  }
-
-  // Validare
-  if (Math.abs(coords.lat) > 90 || Math.abs(coords.lng) > 180) {
-    previewEl.className = 'preview-box error';
-    previewEl.innerHTML = '❌ Coordonate invalide.';
-    pendingLocation[prefix] = null;
-    return;
-  }
-
-  // Reverse geocode pentru oraș
-  previewEl.innerHTML = '⏳ Se identifică orașul...';
-  const city = await reverseGeocode(coords.lat, coords.lng);
-
-  pendingLocation[prefix] = {
-    lat: coords.lat.toFixed(7),
-    lng: coords.lng.toFixed(7),
-    city: city,
-    mapLink: `https://www.google.com/maps?q=${coords.lat},${coords.lng}`
-  };
-
-  previewEl.className = 'preview-box';
-  previewEl.innerHTML = `
-    <b>✅ Locație detectată</b><br>
-    🏙️ <b>${city || 'Oraș necunoscut'}</b><br>
-    <small style="direction:ltr;display:inline-block;">📍 ${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}</small>
-  `;
-}
-
-/* ============================================================ */
-
-function initMap() {
-  map = L.map('map', { zoomControl: false }).setView([45.9432, 24.9668], 7);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19, attribution: '© OpenStreetMap'
-  }).addTo(map);
-  markersLayer = L.layerGroup().addTo(map);
-}
-
-const apiGet = p => fetch(API_URL + "?" + new URLSearchParams(p), {redirect:'follow'}).then(r=>r.json());
+/* ---------- API ---------- */
+const apiGet = p => fetch(API_URL + "?" + new URLSearchParams(p), {redirect:'follow'}).then(r => r.json());
 const apiPost = p => fetch(API_URL, {
-  method: 'POST',
-  body: new URLSearchParams(p).toString(),
-  headers: {'Content-Type':'application/x-www-form-urlencoded'}
-}).then(r=>r.json());
+  method:'POST', body:new URLSearchParams(p).toString(),
+  headers:{'Content-Type':'application/x-www-form-urlencoded'}
+}).then(r => r.json());
 
-const showLoad = s => document.getElementById('loading').classList.toggle('show', s);
 function toast(msg, dur = 2400) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  clearTimeout(t._t);
-  t._t = setTimeout(() => t.classList.remove('show'), dur);
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), dur);
 }
 
+/* ---------- hartă ---------- */
+const dark = window.matchMedia('(prefers-color-scheme:dark)');
+function setTiles() {
+  if (tiles) map.removeLayer(tiles);
+  tiles = L.tileLayer(`https://{s}.basemaps.cartocdn.com/${dark.matches ? 'dark_all' : 'light_all'}/{z}/{x}/{y}{r}.png`,
+    { maxZoom:19, subdomains:'abcd', attribution:'© OpenStreetMap © CARTO' }).addTo(map);
+}
+function initMap() {
+  map = L.map('map', { zoomControl:false }).setView([45.9432, 24.9668], 7);
+  setTiles();
+  dark.addEventListener('change', setTiles);
+}
+function pinIcon(sel) { return L.divIcon({ className:'pin' + (sel ? ' sel' : ''), html:'<i></i>', iconSize:[26,26], iconAnchor:[13,26] }); }
+
+/* ---------- panou glisant ---------- */
+function snaps() { const H = window.innerHeight; return [96, Math.round(H * .46), Math.round(H * .86)]; }
+function setSheet(px, drag) {
+  document.documentElement.style.setProperty('--sh', px + 'px');
+  $('sheet').classList.toggle('dragging', !!drag);
+  $('locate').classList.toggle('dragging', !!drag);
+}
+function goSnap(i) { snap = i; setSheet(snaps()[i]); }
+(function dragInit() {
+  const g = $('grab'); let y0, h0, moved;
+  g.addEventListener('pointerdown', e => { if (wide()) return; y0 = e.clientY; h0 = $('sheet').offsetHeight; moved = false; g.setPointerCapture(e.pointerId); });
+  g.addEventListener('pointermove', e => {
+    if (y0 === undefined) return;
+    const dy = y0 - e.clientY; if (Math.abs(dy) > 4) moved = true;
+    setSheet(Math.max(96, Math.min(window.innerHeight * .9, h0 + dy)), true);
+  });
+  g.addEventListener('pointerup', () => {
+    if (y0 === undefined) return;
+    if (!moved) { goSnap((snap + 1) % 3); }
+    else { const h = $('sheet').offsetHeight, s = snaps(); let b = 0; s.forEach((v, i) => { if (Math.abs(v - h) < Math.abs(s[b] - h)) b = i; }); goSnap(b); }
+    y0 = undefined;
+  });
+})();
+
+/* ---------- date ---------- */
 async function load() {
-  showLoad(true);
+  $('list').innerHTML = '<div class="sk"></div><div class="sk"></div><div class="sk"></div>';
   try {
-    const res = await apiGet({ action: 'getAll' });
-    if (res.success) {
-      stores = res.data;
-      populateCities();
-      render();
-    } else toast('Eroare: ' + res.message);
-  } catch(e) { toast('Eroare conexiune'); }
-  finally { showLoad(false); }
+    const res = await apiGet({ action:'getAll' });
+    if (res.success) { stores = res.data; render(); }
+    else toast('Eroare: ' + res.message);
+  } catch(e) { toast('Fără conexiune. Încearcă din nou.'); render(); }
 }
 
-function populateCities() {
+function renderChips() {
   const cities = [...new Set(stores.map(s => (s.region || '').trim()).filter(Boolean))].sort();
-  const sel = document.getElementById('cityFilter');
-  const current = sel.value;
-  sel.innerHTML = '<option value="">Toate orașele</option>' +
-    cities.map(c => `<option value="${c}">${c}</option>`).join('');
-  sel.value = current;
+  if (cityFilter && !cities.includes(cityFilter)) cityFilter = '';
+  $('chips').innerHTML = cities.length < 2 ? '' :
+    [''].concat(cities).map(c => `<button class="chip ${c === cityFilter ? 'on' : ''}" data-c="${esc(c)}">${c ? esc(c) : 'Toate'}</button>`).join('');
 }
 
 function render() {
-  const q = document.getElementById('search').value.trim().toLowerCase();
-  const city = document.getElementById('cityFilter').value;
+  renderChips();
+  const q = $('search').value.trim().toLowerCase();
+  $('clear').classList.toggle('on', !!q);
+  const filtered = stores.filter(s =>
+    (!q || (s.name || '').toLowerCase().includes(q)) && (!cityFilter || (s.region || '').trim() === cityFilter));
 
-  const filtered = stores.filter(s => {
-    if (q && !(s.name || '').toLowerCase().includes(q)) return false;
-    if (city && (s.region || '').trim() !== city) return false;
-    return true;
-  });
+  $('count').textContent = filtered.length === 1 ? '1 magazin' : `${filtered.length} magazine`;
+  $('total').textContent = filtered.length !== stores.length ? `din ${stores.length}` : '';
 
-  document.getElementById('count').textContent =
-    `${filtered.length} din ${stores.length} magazine`;
-
-  const list = document.getElementById('list');
-  list.innerHTML = '';
+  const list = $('list');
   if (!filtered.length) {
-    list.innerHTML = '<div style="padding:40px 20px;text-align:center;color:#94a3b8;">Niciun rezultat</div>';
+    list.innerHTML = stores.length
+      ? '<div class="empty">Niciun magazin nu se potrivește.<br>Încearcă alt nume sau alt oraș.</div>'
+      : '<div class="empty">Nu ai niciun magazin încă.<br><button onclick="openForm(\'add\')">Adaugă primul magazin</button></div>';
   } else {
-    filtered.forEach(s => {
-      const coords = getCoords(s);
-      const hasLoc = !!coords;
-      const div = document.createElement('div');
-      div.className = 'card';
-      div.dataset.row = s.rowIndex;
-      div.innerHTML = `
-        <div class="card-title">${s.name || 'Fără nume'}</div>
-        ${s.region ? `<span class="city-chip">🏙️ ${s.region}</span>` : ''}
-        <span class="status ${hasLoc ? 'has' : 'no'}">${hasLoc ? '✓ Are locație' : '✗ Fără locație'}</span>
-        <div class="card-actions">
-          <button class="btn-map" onclick="event.stopPropagation();showOnMap(${s.rowIndex})" ${hasLoc ? '' : 'disabled'}>🗺️ Hartă</button>
-          <button class="btn-nav" onclick="event.stopPropagation();openNav(${s.rowIndex})" ${hasLoc ? '' : 'disabled'}>🧭 Navighează</button>
-          <button class="btn-edit" onclick="event.stopPropagation();openEdit(${s.rowIndex})">✏️</button>
+    list.innerHTML = filtered.map(s => {
+      const has = !!getCoords(s), name = s.name || 'Fără nume';
+      return `<div class="card ${s.rowIndex === selected ? 'active' : ''}" data-row="${s.rowIndex}">
+        <div class="row">
+          <div class="ico">${esc(name.trim().charAt(0).toUpperCase())}</div>
+          <div class="meta"><div class="nm">${esc(name)}</div>
+            <div class="sub">${s.region ? esc(s.region) : ''}${has ? '' : '<span class="nolo">Fără locație</span>'}</div></div>
         </div>
-      `;
-      div.onclick = () => showOnMap(s.rowIndex);
-      list.appendChild(div);
-    });
+        <div class="acts">
+          <button class="go" data-go="${s.rowIndex}" ${has ? '' : 'disabled'}>🧭 Navighează</button>
+          <button class="ed" data-ed="${s.rowIndex}" aria-label="Editează">✏️</button>
+        </div></div>`;
+    }).join('');
   }
 
-  markersLayer.clearLayers();
-  stores.forEach(s => {
-    const coords = getCoords(s);
-    if (!coords) return;
-    L.marker(coords).addTo(markersLayer).bindPopup(
-      `<b>${s.name || ''}</b>${s.region ? `<br><small>${s.region}</small>` : ''}`
-    );
+  Object.values(pins).forEach(m => map.removeLayer(m)); pins = {};
+  const visible = [];
+  filtered.forEach(s => {
+    const c = getCoords(s); if (!c) return;
+    visible.push(c);
+    pins[s.rowIndex] = L.marker(c, { icon:pinIcon(s.rowIndex === selected) }).addTo(map)
+      .on('click', () => select(s.rowIndex, true));
   });
+  if ((q || cityFilter) && visible.length) fit(visible);
 }
 
-function showOnMap(rowIndex) {
-  const s = stores.find(x => x.rowIndex === rowIndex);
-  if (!s) return;
-  const coords = getCoords(s);
-  document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
-  const card = document.querySelector(`.card[data-row="${rowIndex}"]`);
-  if (card) card.classList.add('active');
-  if (!coords) { toast('Fără locație'); return; }
-  map.setView(coords, 16);
-  document.getElementById('map').scrollIntoView({ behavior: 'smooth', block: 'start' });
+function fit(coords) {
+  const sh = $('sheet').offsetHeight;
+  const opt = wide() ? { paddingTopLeft:[420, 110], paddingBottomRight:[30, 30] } : { paddingTopLeft:[30, 120], paddingBottomRight:[30, sh + 20] };
+  map.fitBounds(L.latLngBounds(coords), { ...opt, maxZoom:16, animate:true });
 }
 
-/* ---------- ADĂUGARE ---------- */
-function openAdd() {
-  document.getElementById('a_name').value = '';
-  document.getElementById('a_link').value = '';
-  document.getElementById('a_preview').style.display = 'none';
-  pendingLocation.add = null;
-  document.getElementById('addModal').classList.add('open');
+function select(row, fromPin) {
+  const s = stores.find(x => x.rowIndex === row); if (!s) return;
+  selected = row;
+  Object.entries(pins).forEach(([r, m]) => m.setIcon(pinIcon(+r === row)));
+  document.querySelectorAll('.card').forEach(c => c.classList.toggle('active', +c.dataset.row === row));
+  const c = getCoords(s);
+  if (!wide() && snap !== 1) goSnap(1);
+  if (c) setTimeout(() => fit([c]), 60); else toast('Acest magazin nu are locație');
+  const card = document.querySelector(`.card[data-row="${row}"]`);
+  if (card && fromPin) card.scrollIntoView({ block:'nearest', behavior:'smooth' });
 }
 
-document.getElementById('a_link').addEventListener('change', async e => {
-  const url = e.target.value.trim();
-  if (!url) return;
-  await processLocation(url, 'add', document.getElementById('a_preview'));
-});
+/* ---------- formular ---------- */
+function setPreview(state, html) {
+  const p = $('f_pv'); p.className = 'pv on ' + state; p.innerHTML = html;
+}
+function showLoc(loc, label) {
+  setPreview('ok', `<span class="pi">✅</span><div><b>${esc(label)}</b> · ${esc(loc.city || 'Oraș necunoscut')}<small>${(+loc.lat).toFixed(5)}, ${(+loc.lng).toFixed(5)}</small></div>`);
+}
+function checkForm() { $('saveBtn').disabled = !($('f_name').value.trim() && form.loc); }
 
-async function saveAdd() {
-  const name = document.getElementById('a_name').value.trim();
-  if (!name) { toast('Numele e obligatoriu'); return; }
+function openForm(mode, row) {
+  form = { mode, row:row || null, loc:null };
+  $('f_link').value = ''; $('f_pv').className = 'pv';
+  $('fTitle').textContent = mode === 'add' ? 'Magazin nou' : 'Editează magazin';
+  if (mode === 'edit') {
+    const s = stores.find(x => x.rowIndex === row);
+    $('f_name').value = s.name || '';
+    const c = getCoords(s);
+    if (c) {
+      form.loc = { lat:c[0].toFixed(7), lng:c[1].toFixed(7), city:s.region || '', mapLink:s.mapAddress || `https://www.google.com/maps?q=${c[0]},${c[1]}` };
+      showLoc(form.loc, 'Locația actuală');
+    }
+  } else $('f_name').value = '';
+  checkForm();
+  $('formModal').classList.add('open');
+  if (mode === 'add') setTimeout(() => $('f_name').focus(), 300);
+}
 
-  const loc = pendingLocation.add;
-  if (!loc) { toast('Adăugați un link sau folosiți GPS'); return; }
+async function processLink(input) {
+  input = input.trim(); if (!input) return;
+  setPreview('ld', '<span class="pi">⏳</span><div>Se caută locația…</div>');
+  const c = await extractCoordsFromLink(input);
+  if (!c) { form.loc = null; setPreview('err', '<span class="pi">⚠️</span><div>Nu am găsit coordonate în link. Verifică linkul sau folosește locația ta.</div>'); checkForm(); return; }
+  const city = await reverseGeocode(c.lat, c.lng);
+  form.loc = { lat:c.lat.toFixed(7), lng:c.lng.toFixed(7), city, mapLink:`https://www.google.com/maps?q=${c.lat},${c.lng}` };
+  showLoc(form.loc, 'Locație găsită'); checkForm();
+}
 
-  const data = {
-    number: '',
-    name: name,
-    address: '',
-    mapAddress: loc.mapLink,
-    lng: loc.lng,
-    lat: loc.lat,
-    region: loc.city
-  };
-  showLoad(true);
+let linkT;
+$('f_link').addEventListener('input', e => { clearTimeout(linkT); linkT = setTimeout(() => processLink(e.target.value), 600); });
+$('f_name').addEventListener('input', checkForm);
+$('pasteBtn').onclick = async () => {
+  try { const t = await navigator.clipboard.readText(); $('f_link').value = t; processLink(t); }
+  catch(e) { toast('Lipește manual în câmp'); $('f_link').focus(); }
+};
+$('gpsBtn').onclick = () => {
+  if (!navigator.geolocation) return toast('GPS indisponibil');
+  setPreview('ld', '<span class="pi">⏳</span><div>Se obține locația…</div>');
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const { latitude:lat, longitude:lng } = pos.coords;
+    const city = await reverseGeocode(lat, lng);
+    form.loc = { lat:lat.toFixed(7), lng:lng.toFixed(7), city, mapLink:`https://www.google.com/maps?q=${lat},${lng}` };
+    showLoc(form.loc, 'Locația ta'); checkForm();
+  }, err => { setPreview('err', `<span class="pi">⚠️</span><div>GPS: ${esc(err.message)}</div>`); },
+  { enableHighAccuracy:true, timeout:20000 });
+};
+
+$('saveBtn').onclick = async () => {
+  const name = $('f_name').value.trim(), loc = form.loc;
+  if (!name || !loc) return;
+  const data = { number:'', name, address:'', mapAddress:loc.mapLink, lng:loc.lng, lat:loc.lat, region:loc.city };
+  const isEdit = form.mode === 'edit';
+  if (isEdit) data.rowIndex = form.row;
+  const btn = $('saveBtn'); btn.disabled = true; btn.textContent = 'Se salvează…';
   try {
-    const res = await apiPost({ action: 'add', data: JSON.stringify(data) });
-    if (res.success) { toast('✅ Adăugat'); closeM('addModal'); await load(); }
-    else toast('Eroare: ' + res.message);
-  } catch(e) { toast('Eroare conexiune'); }
-  finally { showLoad(false); }
-}
-
-/* ---------- EDITARE ---------- */
-function openEdit(rowIndex) {
-  const s = stores.find(x => x.rowIndex === rowIndex);
-  if (!s) return;
-  document.getElementById('e_row').value = rowIndex;
-  document.getElementById('e_name').value = s.name || '';
-  document.getElementById('e_link').value = '';
-  document.getElementById('e_preview').style.display = 'none';
-  pendingLocation.edit = null;
-
-  const coords = getCoords(s);
-  if (coords) {
-    pendingLocation.edit = {
-      lat: coords[0].toFixed(7),
-      lng: coords[1].toFixed(7),
-      city: s.region || '',
-      mapLink: s.mapAddress || `https://www.google.com/maps?q=${coords[0]},${coords[1]}`
-    };
-    const pv = document.getElementById('e_preview');
-    pv.style.display = 'block';
-    pv.className = 'preview-box';
-    pv.innerHTML = `
-      <b>Locație existentă</b><br>
-      🏙️ <b>${s.region || 'Necunoscut'}</b><br>
-      <small style="direction:ltr;display:inline-block;">📍 ${coords[0].toFixed(6)}, ${coords[1].toFixed(6)}</small>
-    `;
-  }
-
-  document.getElementById('editModal').classList.add('open');
-}
-
-document.getElementById('e_link').addEventListener('change', async e => {
-  const url = e.target.value.trim();
-  if (!url) return;
-  await processLocation(url, 'edit', document.getElementById('e_preview'));
-});
-
-async function saveEdit() {
-  const name = document.getElementById('e_name').value.trim();
-  if (!name) { toast('Numele e obligatoriu'); return; }
-  const loc = pendingLocation.edit;
-  if (!loc) { toast('Nu există locație'); return; }
-
-  const data = {
-    rowIndex: parseInt(document.getElementById('e_row').value),
-    number: '',
-    name: name,
-    address: '',
-    mapAddress: loc.mapLink,
-    lng: loc.lng,
-    lat: loc.lat,
-    region: loc.city
-  };
-  showLoad(true);
-  try {
-    const res = await apiPost({ action: 'update', data: JSON.stringify(data) });
+    const res = await apiPost({ action:isEdit ? 'update' : 'add', data:JSON.stringify(data) });
     if (res.success) {
-      toast('✅ Salvat');
-      closeM('editModal');
+      closeM('formModal'); toast(isEdit ? 'Salvat' : 'Magazin adăugat');
       await load();
-      const coords = getCoords(data);
-      if (coords) map.setView(coords, 16);
+      const c = getCoords(data); if (c) fit([c]);
     } else toast('Eroare: ' + res.message);
-  } catch(e) { toast('Eroare conexiune'); }
-  finally { showLoad(false); }
+  } catch(e) { toast('Fără conexiune. Încearcă din nou.'); }
+  finally { btn.textContent = 'Salvează'; checkForm(); }
+};
+
+function closeM(id) { $(id).classList.remove('open'); }
+$('formModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeM('formModal'); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.scrim.open').forEach(s => s.classList.remove('open')); });
+
+/* ---------- navigare ---------- */
+function openNav(row) {
+  const s = stores.find(x => x.rowIndex === row), c = s && getCoords(s);
+  if (!c) return toast('Fără locație');
+  const [lat, lng] = c;
+  $('navTitle').textContent = s.name || 'Navighează';
+  $('navGoogle').href = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+  $('navWaze').href = `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`;
+  const a = $('navApple'), ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  a.style.display = ios ? 'flex' : 'none';
+  if (ios) a.href = `https://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`;
+  $('navModal').classList.add('open');
 }
 
-function closeM(id) { document.getElementById(id).classList.remove('open'); }
-
-/* ---------- GPS ---------- */
-function gps(prefix) {
-  if (!navigator.geolocation) { toast('GPS indisponibil'); return; }
-  toast('Se obține locația...');
-  navigator.geolocation.getCurrentPosition(
-    async pos => {
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
-      const previewEl = document.getElementById(prefix + '_preview');
-      previewEl.style.display = 'block';
-      previewEl.className = 'preview-box loading';
-      previewEl.innerHTML = '⏳ Se identifică orașul...';
-
-      const city = await reverseGeocode(lat, lng);
-      pendingLocation[prefix] = {
-        lat: lat.toFixed(7),
-        lng: lng.toFixed(7),
-        city: city,
-        mapLink: `https://www.google.com/maps?q=${lat},${lng}`
-      };
-
-      previewEl.className = 'preview-box';
-      previewEl.innerHTML = `
-        <b>✅ Locație GPS detectată</b><br>
-        🏙️ <b>${city || 'Oraș necunoscut'}</b><br>
-        <small style="direction:ltr;display:inline-block;">📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}</small>
-      `;
-      toast('✅ Locație setată');
-    },
-    err => toast('Eroare GPS: ' + err.message),
-    { enableHighAccuracy: true, timeout: 20000 }
-  );
-}
-
-/* ---------- NAVIGARE ---------- */
-function openNav(rowIndex) {
-  const s = stores.find(x => x.rowIndex === rowIndex);
-  if (!s) return;
-  const coords = getCoords(s);
-  if (!coords) { toast('Fără locație'); return; }
-  const [lat, lng] = coords;
-  navTarget = { lat, lng };
-
-  document.getElementById('navGoogle').href =
-    `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
-  document.getElementById('navWaze').href =
-    `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`;
-
-  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-  const appleBtn = document.getElementById('navApple');
-  if (isIOS) {
-    appleBtn.style.display = 'flex';
-    appleBtn.href = `https://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`;
-  } else {
-    appleBtn.style.display = 'none';
-  }
-  document.getElementById('navModal').classList.add('open');
-}
-
-document.getElementById('search').addEventListener('input', render);
-document.getElementById('cityFilter').addEventListener('change', render);
+/* ---------- evenimente ---------- */
+$('list').addEventListener('click', e => {
+  const go = e.target.closest('[data-go]'), ed = e.target.closest('[data-ed]'), card = e.target.closest('.card');
+  if (go) return openNav(+go.dataset.go);
+  if (ed) return openForm('edit', +ed.dataset.ed);
+  if (card) select(+card.dataset.row);
+});
+$('chips').addEventListener('click', e => {
+  const c = e.target.closest('.chip'); if (!c) return;
+  cityFilter = c.dataset.c; render();
+});
+$('search').addEventListener('input', render);
+$('clear').onclick = () => { $('search').value = ''; render(); $('search').focus(); };
+$('locate').onclick = () => {
+  if (!navigator.geolocation) return toast('GPS indisponibil');
+  navigator.geolocation.getCurrentPosition(p => {
+    const ll = [p.coords.latitude, p.coords.longitude];
+    if (meMarker) map.removeLayer(meMarker);
+    meMarker = L.marker(ll, { icon:L.divIcon({ className:'', html:'<div class="me"></div>', iconSize:[16,16] }), interactive:false }).addTo(map);
+    fit([ll]);
+  }, err => toast('GPS: ' + err.message), { enableHighAccuracy:true, timeout:15000 });
+};
+window.addEventListener('resize', () => { if (!wide()) setSheet(snaps()[snap]); map.invalidateSize(); });
 
 initMap();
+goSnap(1);
 load();
 </script>
 </body>
