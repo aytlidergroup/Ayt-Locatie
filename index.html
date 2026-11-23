@@ -29,6 +29,7 @@ button{cursor:pointer;border:none}
 
 #map{position:absolute;inset:0;z-index:0}
 .leaflet-control-attribution{font-size:9px;opacity:.7}
+@media (prefers-color-scheme:dark){.leaflet-layer.osm{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9) saturate(.7)}}
 
 /* top bar */
 #top{position:absolute;z-index:600;left:12px;right:12px;top:max(12px,env(safe-area-inset-top));display:flex;flex-direction:column;gap:10px;pointer-events:none}
@@ -282,8 +283,9 @@ function toast(msg, dur = 2400) {
 const dark = window.matchMedia('(prefers-color-scheme:dark)');
 function setTiles() {
   if (tiles) map.removeLayer(tiles);
-  tiles = L.tileLayer(`https://{s}.basemaps.cartocdn.com/${dark.matches ? 'dark_all' : 'light_all'}/{z}/{x}/{y}{r}.png`,
-    { maxZoom:19, subdomains:'abcd', attribution:'© OpenStreetMap © CARTO' }).addTo(map);
+  tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    { maxZoom:19, attribution:'© OpenStreetMap' }).addTo(map);
+  tiles.getContainer().classList.add('osm');
 }
 function initMap() {
   map = L.map('map', { zoomControl:false }).setView([45.9432, 24.9668], 7);
