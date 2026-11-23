@@ -4,122 +4,133 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#1e3a8a">
-<title>Locații Magazine</title>
+<title>Magazine</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  html, body { height: 100%; overscroll-behavior: none; }
   body {
-    font-family: -apple-system, 'Segoe UI', Roboto, Tahoma, sans-serif;
+    font-family: -apple-system, Roboto, Tahoma, sans-serif;
     background: #f1f5f9; color: #0f172a;
-    display: flex; flex-direction: column; height: 100dvh;
+    height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
   }
 
-  /* ---------- HEADER ---------- */
+  /* HEADER */
   header {
     background: linear-gradient(135deg,#1e3a8a,#2563eb);
-    color: white; padding: 10px 14px;
-    display: flex; align-items: center; gap: 8px;
-    flex-shrink: 0; padding-top: max(10px, env(safe-area-inset-top));
-    box-shadow: 0 2px 8px rgba(30,58,138,.25);
+    color: white; padding: 12px 14px;
+    display: flex; align-items: center; gap: 10px;
+    padding-top: max(12px, env(safe-area-inset-top));
+    flex-shrink: 0;
   }
-  header h1 { font-size: 15px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .icon-btn {
-    background: rgba(255,255,255,.15); border: none; color: white;
-    width: 38px; height: 38px; border-radius: 10px; cursor: pointer;
-    font-size: 18px; display: flex; align-items: center; justify-content: center;
-    transition: background .2s;
+  header h1 { font-size: 16px; flex: 1; }
+  .add-btn {
+    background: rgba(255,255,255,.2); border: none; color: white;
+    width: 40px; height: 40px; border-radius: 10px;
+    font-size: 22px; cursor: pointer; display: flex;
+    align-items: center; justify-content: center;
   }
-  .icon-btn:hover, .icon-btn:active { background: rgba(255,255,255,.3); }
+  .add-btn:active { background: rgba(255,255,255,.4); }
 
-  /* ---------- SEARCH BAR ---------- */
-  #searchBar {
+  /* SEARCH */
+  .search-box {
     background: white; padding: 10px 14px;
-    display: flex; gap: 8px; flex-wrap: wrap; flex-shrink: 0;
-    box-shadow: 0 1px 3px rgba(0,0,0,.06); z-index: 800;
+    display: flex; gap: 8px; flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08); z-index: 10;
   }
-  #searchBar input, #searchBar select {
-    padding: 10px 12px; border: 1.5px solid #e2e8f0;
-    border-radius: 10px; font-size: 14px; font-family: inherit;
-    background: #f8fafc; transition: border-color .2s;
+  .search-box input {
+    flex: 1; padding: 11px 14px; border: 1.5px solid #e2e8f0;
+    border-radius: 10px; font-size: 15px; font-family: inherit;
+    background: #f8fafc;
   }
-  #searchBar input { flex: 1; min-width: 140px; }
-  #searchBar input:focus, #searchBar select:focus {
-    outline: none; border-color: #2563eb; background: white;
+  .search-box input:focus { outline: none; border-color: #2563eb; background: white; }
+  .search-box select {
+    padding: 11px 8px; border: 1.5px solid #e2e8f0;
+    border-radius: 10px; font-size: 13px; font-family: inherit;
+    background: #f8fafc; max-width: 110px;
   }
-  #searchBar select { max-width: 140px; }
 
-  /* ---------- MAIN ---------- */
-  #main { flex: 1; display: flex; overflow: hidden; position: relative; min-height: 0; }
+  /* MAP */
+  #map {
+    height: 220px; width: 100%; flex-shrink: 0;
+    border-bottom: 2px solid #e2e8f0;
+  }
 
-  /* ---------- SIDE PANEL (desktop) ---------- */
-  #sidePanel {
-    width: 380px; background: white; overflow-y: auto;
-    border-right: 1px solid #e2e8f0; -webkit-overflow-scrolling: touch;
+  /* COUNT */
+  #countBar {
+    padding: 8px 14px; background: #f8fafc; font-size: 12px;
+    color: #475569; border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
   }
-  #panelHeader {
-    position: sticky; top: 0; z-index: 10;
-    padding: 10px 14px; background: #f8fafc;
-    border-bottom: 1px solid #e2e8f0; font-size: 12px; color: #475569;
-    display: flex; align-items: center; justify-content: space-between;
+
+  /* LIST */
+  #list {
+    flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    background: white;
   }
-  .store-card {
-    padding: 14px 14px; border-bottom: 1px solid #e2e8f0;
-    cursor: pointer; transition: background .15s;
+  .card {
+    padding: 14px; border-bottom: 1px solid #e2e8f0;
+    cursor: pointer;
   }
-  .store-card:active { background: #e0e7ff; }
-  .store-card.active { background: #dbeafe; border-left: 4px solid #2563eb; }
-  .store-card .top-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
-  .store-card .num {
-    background: #1e3a8a; color: white; font-size: 11px; font-weight: 600;
-    padding: 2px 9px; border-radius: 12px; flex-shrink: 0;
+  .card:active { background: #f1f5f9; }
+  .card.active { background: #dbeafe; border-left: 4px solid #2563eb; }
+
+  .card-head {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
   }
-  .store-card h3 { font-size: 14px; font-weight: 600; flex: 1; }
-  .store-card p { font-size: 12px; color: #64748b; margin-top: 2px; }
-  .store-card .region-badge {
-    display: inline-block; font-size: 10px; padding: 2px 8px;
-    background: #ede9fe; color: #6d28d9; border-radius: 10px; margin-top: 6px;
+  .num-badge {
+    background: #1e3a8a; color: white; font-size: 11px;
+    font-weight: 700; padding: 3px 10px; border-radius: 12px;
+    flex-shrink: 0;
   }
-  .store-card .tags { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
-  .tag { font-size: 10px; padding: 3px 8px; border-radius: 10px; font-weight: 600; }
-  .tag.has { background: #dcfce7; color: #166534; }
-  .tag.no { background: #fee2e2; color: #991b1b; }
-  .card-actions { display: flex; gap: 6px; margin-top: 10px; }
+  .card-title { font-size: 15px; font-weight: 600; flex: 1; }
+
+  .card-line {
+    font-size: 13px; color: #475569; margin-top: 4px;
+    display: flex; gap: 6px;
+  }
+  .card-line .icon { flex-shrink: 0; }
+
+  .region-chip {
+    display: inline-block; font-size: 11px; padding: 3px 9px;
+    background: #ede9fe; color: #6d28d9; border-radius: 10px;
+    margin-top: 6px; font-weight: 600;
+  }
+  .status {
+    display: inline-block; font-size: 11px; padding: 3px 9px;
+    border-radius: 10px; margin-top: 6px; font-weight: 600;
+  }
+  .status.has { background: #dcfce7; color: #166534; }
+  .status.no { background: #fee2e2; color: #991b1b; }
+
+  .card-actions {
+    display: flex; gap: 8px; margin-top: 12px;
+  }
   .card-actions button {
-    flex: 1; padding: 7px 10px; font-size: 12px; font-weight: 600;
-    border: none; border-radius: 8px; cursor: pointer; font-family: inherit;
+    flex: 1; padding: 10px; font-size: 13px; font-weight: 600;
+    border: none; border-radius: 8px; cursor: pointer;
+    font-family: inherit;
   }
+  .btn-map { background: #dbeafe; color: #1e40af; }
+  .btn-nav { background: #16a34a; color: white; }
+  .btn-edit { background: #f1f5f9; color: #475569; }
+  .card-actions button:active { opacity: .7; }
+  .card-actions button:disabled { opacity: .4; }
 
-  /* ---------- MAP ---------- */
-  #map { flex: 1; min-height: 0; }
-
-  /* ---------- BUTTONS ---------- */
-  .btn {
-    background: #2563eb; color: white; border: none;
-    padding: 10px 16px; border-radius: 10px; cursor: pointer;
-    font-family: inherit; font-size: 14px; font-weight: 600;
-    transition: transform .1s, opacity .2s;
+  /* MODAL */
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(15,23,42,.6);
+    display: none; z-index: 1000;
+    align-items: flex-end;
   }
-  .btn:active { transform: scale(.97); opacity: .9; }
-  .btn.green { background: #16a34a; }
-  .btn.gray { background: #64748b; }
-  .btn.gold { background: #d97706; }
-  .btn.light { background: #e2e8f0; color: #1e293b; }
-
-  /* ---------- MODAL ---------- */
-  .modal-backdrop {
-    position: fixed; inset: 0; background: rgba(15,23,42,.55);
-    display: none; align-items: flex-end; justify-content: center;
-    z-index: 2000; backdrop-filter: blur(2px);
-  }
-  .modal-backdrop.open { display: flex; }
+  .modal-bg.open { display: flex; }
   .modal {
-    background: white; width: 100%; max-width: 500px;
-    max-height: 92dvh; overflow-y: auto;
-    border-radius: 20px 20px 0 0; padding: 20px;
+    background: white; width: 100%;
+    border-radius: 20px 20px 0 0;
+    padding: 20px 18px;
     padding-bottom: max(20px, env(safe-area-inset-bottom));
-    animation: slideUp .25s ease-out;
+    max-height: 92dvh; overflow-y: auto;
+    animation: slideUp .25s;
   }
   @keyframes slideUp {
     from { transform: translateY(100%); }
@@ -135,68 +146,60 @@
     display: block; font-size: 12px; color: #475569;
     margin-bottom: 5px; font-weight: 600;
   }
-  .field input, .field select {
-    width: 100%; padding: 11px 13px;
+  .field input {
+    width: 100%; padding: 12px 14px;
     border: 1.5px solid #e2e8f0; border-radius: 10px;
-    font-family: inherit; font-size: 14px; background: #f8fafc;
-    transition: border-color .2s;
+    font-family: inherit; font-size: 15px; background: #f8fafc;
   }
-  .field input:focus, .field select:focus {
-    outline: none; border-color: #2563eb; background: white;
+  .field input:focus { outline: none; border-color: #2563eb; background: white; }
+  .coords { display: flex; gap: 8px; }
+  .coords .field { flex: 1; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 18px; }
+  .modal-actions button {
+    flex: 1; padding: 13px; font-size: 14px; font-weight: 700;
+    border: none; border-radius: 10px; cursor: pointer;
+    font-family: inherit;
   }
-  .coords-row { display: flex; gap: 8px; }
-  .coords-row .field { flex: 1; }
-  .modal-actions {
-    display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap;
-  }
-  .modal-actions .btn { flex: 1; min-width: 100px; }
-  .hint { font-size: 11px; color: #64748b; margin-top: 5px; line-height: 1.5; }
-
-  /* ---------- MOBILE BOTTOM SHEET ---------- */
-  @media (max-width: 768px) {
-    #sidePanel {
-      position: absolute; left: 0; right: 0; bottom: 0;
-      top: 30%; width: 100%; z-index: 500;
-      border-radius: 20px 20px 0 0;
-      box-shadow: 0 -4px 20px rgba(0,0,0,.15);
-      transform: translateY(calc(100% - 60px));
-      transition: transform .3s cubic-bezier(.4,0,.2,1);
-      border-right: none;
-    }
-    #sidePanel.open { transform: translateY(0); }
-    #panelHeader {
-      cursor: grab; user-select: none;
-      border-radius: 20px 20px 0 0;
-      padding: 12px 16px;
-    }
-    #panelHeader::before {
-      content: ''; display: block; width: 40px; height: 4px;
-      background: #cbd5e1; border-radius: 2px;
-      position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
-    }
-    #map { width: 100%; }
-    .mobile-only { display: block; }
-    header h1 { font-size: 14px; }
-  }
-  @media (min-width: 769px) {
-    .mobile-only { display: none; }
-    #panelHeader::before { display: none; }
+  .btn-cancel { background: #e2e8f0; color: #475569; }
+  .btn-save { background: #16a34a; color: white; }
+  .btn-gps {
+    background: #d97706; color: white; padding: 12px;
+    font-size: 13px; font-weight: 700; border: none;
+    border-radius: 10px; cursor: pointer; width: 100%;
+    margin-bottom: 14px; font-family: inherit;
   }
 
-  /* ---------- TOAST & LOADING ---------- */
+  /* NAV OPTIONS */
+  .nav-option {
+    display: flex; align-items: center; gap: 14px;
+    padding: 15px 16px; background: #f8fafc;
+    border: 1.5px solid #e2e8f0; border-radius: 12px;
+    margin-bottom: 10px; text-decoration: none;
+    color: #0f172a; font-size: 15px;
+  }
+  .nav-option:active { background: #dbeafe; border-color: #2563eb; }
+  .nav-option .nicon {
+    width: 42px; height: 42px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+  }
+  .nav-option .ntext { flex: 1; font-weight: 600; }
+
+  /* TOAST */
   #toast {
-    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
     background: #0f172a; color: white; padding: 12px 22px;
-    border-radius: 12px; font-size: 13px; opacity: 0;
-    transition: opacity .3s; pointer-events: none; z-index: 3000;
-    max-width: 90vw; text-align: center;
+    border-radius: 12px; font-size: 14px; opacity: 0;
+    transition: opacity .3s; pointer-events: none;
+    z-index: 2000; max-width: 90vw; text-align: center;
   }
   #toast.show { opacity: 1; }
+
+  /* LOADING */
   #loading {
     position: fixed; inset: 0; background: rgba(255,255,255,.85);
     display: none; align-items: center; justify-content: center;
-    z-index: 4000; font-size: 15px;
-    flex-direction: column; gap: 14px;
+    z-index: 3000; flex-direction: column; gap: 14px;
   }
   #loading.show { display: flex; }
   .spinner {
@@ -205,465 +208,351 @@
     animation: spin .8s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* ---------- NAVIGATION SHEET ---------- */
-  .nav-options {
-    display: flex; flex-direction: column; gap: 10px; margin-top: 12px;
-  }
-  .nav-option {
-    display: flex; align-items: center; gap: 14px;
-    padding: 14px 16px; background: #f8fafc;
-    border: 1.5px solid #e2e8f0; border-radius: 12px;
-    cursor: pointer; transition: all .15s; text-decoration: none;
-    color: #0f172a; font-size: 14px; font-weight: 500;
-  }
-  .nav-option:active { background: #e0e7ff; border-color: #2563eb; }
-  .nav-icon {
-    width: 40px; height: 40px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px; flex-shrink: 0;
-  }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🏪 Locații Magazine</h1>
-  <button class="icon-btn" onclick="openAddModal()" title="Magazin nou">➕</button>
+  <h1>🏪 Magazine</h1>
+  <button class="add-btn" onclick="openAdd()">+</button>
 </header>
 
-<div id="searchBar">
-  <input type="text" id="searchInput" placeholder="🔍 Caută magazin...">
-  <select id="regionFilter" title="Regiune"><option value="">Toate regiunile</option></select>
-  <select id="filterSelect" title="Stare">
+<div class="search-box">
+  <input type="text" id="search" placeholder="🔍 Caută...">
+  <select id="filter">
     <option value="all">Toate</option>
     <option value="has">Cu locație</option>
     <option value="no">Fără locație</option>
   </select>
 </div>
 
-<div id="main">
-  <div id="sidePanel">
-    <div id="panelHeader">
-      <span id="countLabel">Se încarcă...</span>
-      <button class="btn light mobile-only" style="padding:5px 12px; font-size:12px;" onclick="togglePanel()">✕</button>
-    </div>
-    <div id="storeList"></div>
-  </div>
-  <div id="map"></div>
-</div>
+<div id="map"></div>
+<div id="countBar"><span id="count">Se încarcă...</span></div>
+<div id="list"></div>
 
-<!-- Modal Adăugare -->
-<div class="modal-backdrop" id="addModal" onclick="if(event.target===this)closeModal('addModal')">
-  <div class="modal" onclick="event.stopPropagation()">
+<!-- MODAL ADAUGĂ -->
+<div class="modal-bg" id="addModal" onclick="if(event.target===this)closeM('addModal')">
+  <div class="modal">
     <div class="modal-handle"></div>
-    <h2>➕ Adăugare magazin nou</h2>
-    <div class="field"><label>Număr magazin (A)</label><input id="add_number" inputmode="numeric"></div>
-    <div class="field"><label>Nume magazin (B) *</label><input id="add_name"></div>
-    <div class="field"><label>Adresă (C)</label><input id="add_address"></div>
-    <div class="field">
-      <label>Regiune / Oraș (G)</label>
-      <input id="add_region" list="regionList" placeholder="ex: București, Cluj...">
-      <datalist id="regionList"></datalist>
+    <h2>➕ Magazin nou</h2>
+    <div class="field"><label>Număr (A)</label><input id="a_num" inputmode="numeric"></div>
+    <div class="field"><label>Nume magazin (B) *</label><input id="a_name"></div>
+    <div class="field"><label>Adresă (C)</label><input id="a_addr"></div>
+    <div class="field"><label>Regiune (G)</label><input id="a_region"></div>
+    <div class="field"><label>Link Google Maps (D)</label><input id="a_map"></div>
+    <div class="coords">
+      <div class="field"><label>Long (E)</label><input id="a_lng" inputmode="decimal"></div>
+      <div class="field"><label>Lat (F)</label><input id="a_lat" inputmode="decimal"></div>
     </div>
-    <div class="field">
-      <label>Adresă Google Maps / Waze (D)</label>
-      <input id="add_mapAddress" placeholder="https://maps.google.com/...">
-    </div>
-    <div class="coords-row">
-      <div class="field"><label>Longitude (E)</label><input id="add_lng" inputmode="decimal"></div>
-      <div class="field"><label>Latitude (F)</label><input id="add_lat" inputmode="decimal"></div>
-    </div>
+    <button class="btn-gps" onclick="gps('a_')">📍 Folosește locația mea</button>
     <div class="modal-actions">
-      <button class="btn gold" onclick="useCurrentLocation('add')">📍 Locația mea</button>
-      <button class="btn gray" onclick="closeModal('addModal')">Anulează</button>
-      <button class="btn green" onclick="submitAdd()">💾 Salvează</button>
+      <button class="btn-cancel" onclick="closeM('addModal')">Anulează</button>
+      <button class="btn-save" onclick="saveAdd()">💾 Salvează</button>
     </div>
   </div>
 </div>
 
-<!-- Modal Editare -->
-<div class="modal-backdrop" id="editModal" onclick="if(event.target===this)closeModal('editModal')">
-  <div class="modal" onclick="event.stopPropagation()">
+<!-- MODAL EDITEAZĂ -->
+<div class="modal-bg" id="editModal" onclick="if(event.target===this)closeM('editModal')">
+  <div class="modal">
     <div class="modal-handle"></div>
-    <h2>✏️ Editare magazin</h2>
-    <input type="hidden" id="edit_rowIndex">
-    <div class="field"><label>Număr magazin (A)</label><input id="edit_number" inputmode="numeric"></div>
-    <div class="field"><label>Nume magazin (B) *</label><input id="edit_name"></div>
-    <div class="field"><label>Adresă (C)</label><input id="edit_address"></div>
-    <div class="field">
-      <label>Regiune / Oraș (G)</label>
-      <input id="edit_region" list="regionList">
+    <h2>✏️ Editează</h2>
+    <input type="hidden" id="e_row">
+    <div class="field"><label>Număr (A)</label><input id="e_num" inputmode="numeric"></div>
+    <div class="field"><label>Nume magazin (B) *</label><input id="e_name"></div>
+    <div class="field"><label>Adresă (C)</label><input id="e_addr"></div>
+    <div class="field"><label>Regiune (G)</label><input id="e_region"></div>
+    <div class="field"><label>Link Google Maps (D)</label><input id="e_map"></div>
+    <div class="coords">
+      <div class="field"><label>Long (E)</label><input id="e_lng" inputmode="decimal"></div>
+      <div class="field"><label>Lat (F)</label><input id="e_lat" inputmode="decimal"></div>
     </div>
-    <div class="field">
-      <label>Adresă Google Maps / Waze (D)</label>
-      <input id="edit_mapAddress">
-    </div>
-    <div class="coords-row">
-      <div class="field"><label>Longitude (E)</label><input id="edit_lng" inputmode="decimal"></div>
-      <div class="field"><label>Latitude (F)</label><input id="edit_lat" inputmode="decimal"></div>
-    </div>
+    <button class="btn-gps" onclick="gps('e_')">📍 Folosește locația mea</button>
     <div class="modal-actions">
-      <button class="btn gold" onclick="useCurrentLocation('edit')">📍 Locația mea</button>
-      <button class="btn gray" onclick="closeModal('editModal')">Anulează</button>
-      <button class="btn" onclick="submitEdit()">💾 Salvează</button>
+      <button class="btn-cancel" onclick="closeM('editModal')">Anulează</button>
+      <button class="btn-save" onclick="saveEdit()">💾 Salvează</button>
     </div>
   </div>
 </div>
 
-<!-- Modal Navigare către app -->
-<div class="modal-backdrop" id="navModal" onclick="if(event.target===this)closeModal('navModal')">
-  <div class="modal" onclick="event.stopPropagation()">
+<!-- MODAL NAVIGARE -->
+<div class="modal-bg" id="navModal" onclick="if(event.target===this)closeM('navModal')">
+  <div class="modal">
     <div class="modal-handle"></div>
-    <h2>🧭 Deschide în aplicație</h2>
-    <p style="font-size:12px;color:#64748b;text-align:center;" id="navTargetLabel"></p>
-    <div class="nav-options" id="navOptions"></div>
-    <div class="modal-actions" style="margin-top:16px;">
-      <button class="btn gray" onclick="closeModal('navModal')">Anulează</button>
-    </div>
+    <h2>🧭 Deschide în</h2>
+    <a class="nav-option" id="navGoogle" target="_blank" rel="noopener">
+      <div class="nicon" style="background:#dbeafe;">🗺️</div>
+      <div class="ntext">Google Maps</div>
+    </a>
+    <a class="nav-option" id="navWaze" target="_blank" rel="noopener">
+      <div class="nicon" style="background:#dcfce7;">🚗</div>
+      <div class="ntext">Waze</div>
+    </a>
+    <a class="nav-option" id="navApple" target="_blank" rel="noopener" style="display:none;">
+      <div class="nicon" style="background:#f1f5f9;">🍎</div>
+      <div class="ntext">Apple Maps</div>
+    </a>
+    <button class="btn-gps" onclick="copyCoords()" style="background:#fef3c7;color:#92400e;margin-top:10px;">
+      📋 Copiază coordonatele
+    </button>
+    <button class="btn-cancel" style="width:100%;padding:13px;border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;" onclick="closeM('navModal')">Închide</button>
   </div>
 </div>
 
 <div id="toast"></div>
-<div id="loading"><div class="spinner"></div><span>Se încarcă...</span></div>
+<div id="loading"><div class="spinner"></div></div>
 
 <script>
-/* ============================================================
-   ⚠️ Puneți aici adresa Apps Script
-   ============================================================ */
+/* ⚠️ PUNEȚI AICI LINKUL APPS SCRIPT */
 const API_URL = "https://script.google.com/macros/s/AKfycbyPOsBcnW2d8kHf1-vzT5ynRenybxocEc08wTw1MIvBJt2K9jWPXhKa0foPzUYLLe1oKQ/exec";
 
 let stores = [];
 let map, markersLayer;
+let navTarget = null;
 
-/* ---------- HARTĂ ---------- */
+/* MAP */
 function initMap() {
-  map = L.map('map', { zoomControl: true }).setView([45.9432, 24.9668], 7); // România
+  map = L.map('map', { zoomControl: false }).setView([45.9432, 24.9668], 7);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19, attribution: '&copy; OpenStreetMap'
+    maxZoom: 19, attribution: '© OpenStreetMap'
   }).addTo(map);
   markersLayer = L.layerGroup().addTo(map);
 }
 
-/* ---------- API ---------- */
-function apiGet(params) {
-  return fetch(API_URL + "?" + new URLSearchParams(params).toString(),
-    { method: 'GET', redirect: 'follow' }).then(r => r.json());
-}
-function apiPost(params) {
-  return fetch(API_URL, {
-    method: 'POST',
-    body: new URLSearchParams(params).toString(),
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-  }).then(r => r.json());
-}
+/* API */
+const apiGet = p => fetch(API_URL + "?" + new URLSearchParams(p), {redirect:'follow'}).then(r=>r.json());
+const apiPost = p => fetch(API_URL, {
+  method: 'POST',
+  body: new URLSearchParams(p).toString(),
+  headers: {'Content-Type':'application/x-www-form-urlencoded'}
+}).then(r=>r.json());
 
-function showLoading(show) {
-  document.getElementById('loading').classList.toggle('show', show);
-}
-function toast(msg, duration = 2400) {
+/* UI helpers */
+const showLoad = s => document.getElementById('loading').classList.toggle('show', s);
+function toast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
   clearTimeout(t._t);
-  t._t = setTimeout(() => t.classList.remove('show'), duration);
+  t._t = setTimeout(() => t.classList.remove('show'), 2200);
 }
 
-/* ---------- ÎNCĂRCARE ---------- */
-async function loadStores() {
-  showLoading(true);
+/* LOAD DATA */
+async function load() {
+  showLoad(true);
   try {
     const res = await apiGet({ action: 'getAll' });
     if (res.success) {
       stores = res.data;
-      populateRegions();
-      renderList();
-      renderMarkers();
+      render();
     } else toast('Eroare: ' + res.message);
-  } catch (e) {
-    toast('Eroare de conectare: ' + e.message);
-  } finally { showLoading(false); }
+  } catch(e) { toast('Eroare conexiune'); }
+  finally { showLoad(false); }
 }
 
-/* ---------- POPULARE REGIUNI ---------- */
-function populateRegions() {
-  const regions = [...new Set(stores.map(s => (s.region || '').trim()).filter(Boolean))].sort();
-  const sel = document.getElementById('regionFilter');
-  const current = sel.value;
-  sel.innerHTML = '<option value="">Toate regiunile</option>' +
-    regions.map(r => `<option value="${r}">${r}</option>`).join('');
-  sel.value = current;
-
-  // Datalist pentru input-uri
-  document.getElementById('regionList').innerHTML =
-    regions.map(r => `<option value="${r}">`).join('');
-}
-
-/* ---------- RANDARE LISTĂ ---------- */
-function renderList() {
-  const q = document.getElementById('searchInput').value.trim().toLowerCase();
-  const region = document.getElementById('regionFilter').value;
-  const filter = document.getElementById('filterSelect').value;
+/* RENDER LIST + MAP */
+function render() {
+  const q = document.getElementById('search').value.trim().toLowerCase();
+  const filter = document.getElementById('filter').value;
 
   const filtered = stores.filter(s => {
-    const text = `${s.number} ${s.name} ${s.address} ${s.mapAddress} ${s.region}`.toLowerCase();
+    const text = `${s.number} ${s.name} ${s.address} ${s.region}`.toLowerCase();
     if (q && !text.includes(q)) return false;
-    if (region && (s.region || '').trim() !== region) return false;
-    const hasLoc = s.lat && s.lng && !isNaN(parseFloat(s.lat)) && !isNaN(parseFloat(s.lng));
+    const hasLoc = parseFloat(s.lat) && parseFloat(s.lng);
     if (filter === 'has' && !hasLoc) return false;
     if (filter === 'no' && hasLoc) return false;
     return true;
   });
 
-  document.getElementById('countLabel').textContent =
+  document.getElementById('count').textContent =
     `${filtered.length} din ${stores.length} magazine`;
 
-  const list = document.getElementById('storeList');
+  /* list */
+  const list = document.getElementById('list');
   list.innerHTML = '';
   if (!filtered.length) {
-    list.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;font-size:13px;">Niciun rezultat găsit</div>';
-    return;
+    list.innerHTML = '<div style="padding:40px 20px;text-align:center;color:#94a3b8;">Niciun rezultat</div>';
+  } else {
+    filtered.forEach(s => {
+      const hasLoc = parseFloat(s.lat) && parseFloat(s.lng);
+      const div = document.createElement('div');
+      div.className = 'card';
+      div.dataset.row = s.rowIndex;
+      div.innerHTML = `
+        <div class="card-head">
+          <span class="num-badge">${s.number || '—'}</span>
+          <div class="card-title">${s.name || 'Fără nume'}</div>
+        </div>
+        <div class="card-line"><span class="icon">📍</span>${s.address || 'Fără adresă'}</div>
+        ${s.region ? `<span class="region-chip">🗺️ ${s.region}</span>` : ''}
+        <span class="status ${hasLoc ? 'has' : 'no'}">${hasLoc ? '✓ Are locație' : '✗ Fără locație'}</span>
+        <div class="card-actions">
+          <button class="btn-map" onclick="event.stopPropagation();showOnMap(${s.rowIndex})">🗺️ Hartă</button>
+          <button class="btn-nav" onclick="event.stopPropagation();openNav(${s.rowIndex})" ${hasLoc ? '' : 'disabled'}>🧭 Navighează</button>
+          <button class="btn-edit" onclick="event.stopPropagation();openEdit(${s.rowIndex})">✏️</button>
+        </div>
+      `;
+      div.onclick = () => showOnMap(s.rowIndex);
+      list.appendChild(div);
+    });
   }
 
-  filtered.forEach(s => {
-    const hasLoc = s.lat && s.lng && !isNaN(parseFloat(s.lat)) && !isNaN(parseFloat(s.lng));
-    const div = document.createElement('div');
-    div.className = 'store-card';
-    div.dataset.row = s.rowIndex;
-    div.innerHTML = `
-      <div class="top-row">
-        <span class="num">${s.number || '—'}</span>
-        <h3>${s.name || 'Fără nume'}</h3>
-      </div>
-      <p>📍 ${s.address || 'Fără adresă'}</p>
-      ${s.region ? `<span class="region-badge">🗺️ ${s.region}</span>` : ''}
-      <div class="tags">
-        <span class="tag ${hasLoc ? 'has' : 'no'}">${hasLoc ? '✓ Are locație' : '✗ Fără locație'}</span>
-      </div>
-      <div class="card-actions">
-        <button class="btn" onclick="event.stopPropagation();focusStore(${s.rowIndex})">🗺️ Hartă</button>
-        <button class="btn green" onclick="event.stopPropagation();openNav(${s.rowIndex})" ${hasLoc ? '' : 'disabled style="opacity:.4;cursor:not-allowed"'}>🧭 Navighează</button>
-        <button class="btn gray" onclick="event.stopPropagation();openEditModal(${s.rowIndex})">✏️</button>
-      </div>
-    `;
-    div.addEventListener('click', () => focusStore(s.rowIndex));
-    list.appendChild(div);
-  });
-}
-
-/* ---------- MARKERE ---------- */
-function renderMarkers() {
+  /* markers */
   markersLayer.clearLayers();
   stores.forEach(s => {
     const lat = parseFloat(s.lat), lng = parseFloat(s.lng);
-    if (isNaN(lat) || isNaN(lng)) return;
-    L.marker([lat, lng]).addTo(markersLayer).bindPopup(`
-      <div style="font-family:Segoe UI;min-width:180px;">
-        <b>${s.number ? '#'+s.number+' ' : ''}${s.name || 'Fără nume'}</b><br>
-        <small>${s.address || ''}</small><br>
-        ${s.region ? `<small>🗺️ ${s.region}</small><br>` : ''}
-        <a href="#" onclick="openNav(${s.rowIndex});return false;" style="display:inline-block;margin-top:6px;color:#2563eb;font-weight:600;">🧭 Navighează</a>
-      </div>
-    `);
+    if (!lat || !lng) return;
+    L.marker([lat, lng]).addTo(markersLayer).bindPopup(
+      `<b>${s.name || ''}</b><br><small>${s.address || ''}</small>`
+    );
   });
 }
 
-/* ---------- FOCUS ---------- */
-function focusStore(rowIndex) {
+/* SHOW ON MAP */
+function showOnMap(rowIndex) {
   const s = stores.find(x => x.rowIndex === rowIndex);
   if (!s) return;
   const lat = parseFloat(s.lat), lng = parseFloat(s.lng);
-  document.querySelectorAll('.store-card').forEach(c => c.classList.remove('active'));
-  const card = document.querySelector(`.store-card[data-row="${rowIndex}"]`);
-  if (card) { card.classList.add('active'); card.scrollIntoView({behavior:'smooth',block:'nearest'}); }
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
+  const card = document.querySelector(`.card[data-row="${rowIndex}"]`);
+  if (card) card.classList.add('active');
 
-  if (!isNaN(lat) && !isNaN(lng)) {
-    map.setView([lat, lng], 16);
-    if (window.innerWidth <= 768) document.getElementById('sidePanel').classList.remove('open');
-  } else {
-    toast('Acest magazin nu are locație. Folosiți Editează.');
-  }
+  if (!lat || !lng) { toast('Fără locație — editați pentru a adăuga'); return; }
+  map.setView([lat, lng], 16);
+  document.getElementById('map').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-/* ---------- TOGGLE PANEL (mobil) ---------- */
-function togglePanel() {
-  document.getElementById('sidePanel').classList.toggle('open');
-}
-
-/* ---------- MODALE ---------- */
-function openAddModal() {
-  ['add_number','add_name','add_address','add_region','add_mapAddress','add_lng','add_lat']
+/* ADD */
+function openAdd() {
+  ['a_num','a_name','a_addr','a_region','a_map','a_lng','a_lat']
     .forEach(id => document.getElementById(id).value = '');
   document.getElementById('addModal').classList.add('open');
 }
-function openEditModal(rowIndex) {
-  const s = stores.find(x => x.rowIndex === rowIndex);
-  if (!s) return;
-  document.getElementById('edit_rowIndex').value = rowIndex;
-  document.getElementById('edit_number').value = s.number || '';
-  document.getElementById('edit_name').value = s.name || '';
-  document.getElementById('edit_address').value = s.address || '';
-  document.getElementById('edit_region').value = s.region || '';
-  document.getElementById('edit_mapAddress').value = s.mapAddress || '';
-  document.getElementById('edit_lng').value = s.lng || '';
-  document.getElementById('edit_lat').value = s.lat || '';
-  document.getElementById('editModal').classList.add('open');
-}
-function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
+async function saveAdd() {
+  const data = {
+    number: document.getElementById('a_num').value,
+    name: document.getElementById('a_name').value,
+    address: document.getElementById('a_addr').value,
+    region: document.getElementById('a_region').value,
+    mapAddress: document.getElementById('a_map').value,
+    lng: document.getElementById('a_lng').value,
+    lat: document.getElementById('a_lat').value
+  };
+  if (!data.name.trim()) { toast('Numele e obligatoriu'); return; }
+  showLoad(true);
+  try {
+    const res = await apiPost({ action: 'add', data: JSON.stringify(data) });
+    if (res.success) { toast('✅ Adăugat'); closeM('addModal'); await load(); }
+    else toast('Eroare: ' + res.message);
+  } catch(e) { toast('Eroare conexiune'); }
+  finally { showLoad(false); }
 }
 
-/* ---------- GPS ---------- */
-function useCurrentLocation(prefix) {
-  if (!navigator.geolocation) { toast('GPS nu este acceptat'); return; }
+/* EDIT */
+function openEdit(rowIndex) {
+  const s = stores.find(x => x.rowIndex === rowIndex);
+  if (!s) return;
+  document.getElementById('e_row').value = rowIndex;
+  document.getElementById('e_num').value = s.number || '';
+  document.getElementById('e_name').value = s.name || '';
+  document.getElementById('e_addr').value = s.address || '';
+  document.getElementById('e_region').value = s.region || '';
+  document.getElementById('e_map').value = s.mapAddress || '';
+  document.getElementById('e_lng').value = s.lng || '';
+  document.getElementById('e_lat').value = s.lat || '';
+  document.getElementById('editModal').classList.add('open');
+}
+async function saveEdit() {
+  const data = {
+    rowIndex: parseInt(document.getElementById('e_row').value),
+    number: document.getElementById('e_num').value,
+    name: document.getElementById('e_name').value,
+    address: document.getElementById('e_addr').value,
+    region: document.getElementById('e_region').value,
+    mapAddress: document.getElementById('e_map').value,
+    lng: document.getElementById('e_lng').value,
+    lat: document.getElementById('e_lat').value
+  };
+  if (!data.name.trim()) { toast('Numele e obligatoriu'); return; }
+  showLoad(true);
+  try {
+    const res = await apiPost({ action: 'update', data: JSON.stringify(data) });
+    if (res.success) {
+      toast('✅ Salvat');
+      closeM('editModal');
+      await load();
+      const lat = parseFloat(data.lat), lng = parseFloat(data.lng);
+      if (lat && lng) map.setView([lat, lng], 16);
+    } else toast('Eroare: ' + res.message);
+  } catch(e) { toast('Eroare conexiune'); }
+  finally { showLoad(false); }
+}
+
+/* CLOSE */
+function closeM(id) { document.getElementById(id).classList.remove('open'); }
+
+/* GPS */
+function gps(prefix) {
+  if (!navigator.geolocation) { toast('GPS indisponibil'); return; }
   toast('Se obține locația...');
   navigator.geolocation.getCurrentPosition(
     pos => {
       const lat = pos.coords.latitude.toFixed(7);
       const lng = pos.coords.longitude.toFixed(7);
-      document.getElementById(prefix + '_lat').value = lat;
-      document.getElementById(prefix + '_lng').value = lng;
-      document.getElementById(prefix + '_mapAddress').value =
-        `https://www.google.com/maps?q=${lat},${lng}`;
-      toast('✅ Locație înregistrată');
+      document.getElementById(prefix + 'lat').value = lat;
+      document.getElementById(prefix + 'lng').value = lng;
+      document.getElementById(prefix + 'map').value = `https://www.google.com/maps?q=${lat},${lng}`;
+      toast('✅ Locație setată');
     },
-    err => toast('Eroare: ' + err.message),
+    err => toast('Eroare GPS: ' + err.message),
     { enableHighAccuracy: true, timeout: 15000 }
   );
 }
 
-/* ---------- TRIMITERE ---------- */
-async function submitAdd() {
-  const data = {
-    number: document.getElementById('add_number').value,
-    name: document.getElementById('add_name').value,
-    address: document.getElementById('add_address').value,
-    region: document.getElementById('add_region').value,
-    mapAddress: document.getElementById('add_mapAddress').value,
-    lng: document.getElementById('add_lng').value,
-    lat: document.getElementById('add_lat').value
-  };
-  if (!data.name.trim()) { toast('Numele magazinului este obligatoriu'); return; }
-  showLoading(true);
-  try {
-    const res = await apiPost({ action: 'add', data: JSON.stringify(data) });
-    if (res.success) {
-      toast('✅ Magazin adăugat');
-      closeModal('addModal');
-      await loadStores();
-    } else toast('Eroare: ' + res.message);
-  } catch (e) { toast('Eroare: ' + e.message); }
-  finally { showLoading(false); }
-}
-
-async function submitEdit() {
-  const data = {
-    rowIndex: parseInt(document.getElementById('edit_rowIndex').value),
-    number: document.getElementById('edit_number').value,
-    name: document.getElementById('edit_name').value,
-    address: document.getElementById('edit_address').value,
-    region: document.getElementById('edit_region').value,
-    mapAddress: document.getElementById('edit_mapAddress').value,
-    lng: document.getElementById('edit_lng').value,
-    lat: document.getElementById('edit_lat').value
-  };
-  if (!data.name.trim()) { toast('Numele magazinului este obligatoriu'); return; }
-  showLoading(true);
-  try {
-    const res = await apiPost({ action: 'update', data: JSON.stringify(data) });
-    if (res.success) {
-      toast('✅ Salvat');
-      closeModal('editModal');
-      await loadStores();
-      const lat = parseFloat(data.lat), lng = parseFloat(data.lng);
-      if (!isNaN(lat) && !isNaN(lng)) map.setView([lat, lng], 16);
-    } else toast('Eroare: ' + res.message);
-  } catch (e) { toast('Eroare: ' + e.message); }
-  finally { showLoading(false); }
-}
-
-/* ============================================================
-   🧭 NAVIGARE CĂTRE APP-URI EXTERNE
-   ============================================================ */
-let navStore = null;
-
+/* NAVIGARE */
 function openNav(rowIndex) {
   const s = stores.find(x => x.rowIndex === rowIndex);
   if (!s) return;
   const lat = parseFloat(s.lat), lng = parseFloat(s.lng);
-  if (isNaN(lat) || isNaN(lng)) { toast('Magazinul nu are locație'); return; }
+  if (!lat || !lng) { toast('Fără locație'); return; }
+  navTarget = { lat, lng };
 
-  navStore = { lat, lng, name: s.name || '' };
-  document.getElementById('navTargetLabel').textContent =
-    `${s.name || ''} — ${s.address || ''}`;
+  document.getElementById('navGoogle').href =
+    `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+  document.getElementById('navWaze').href =
+    `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`;
 
-  const label = encodeURIComponent(s.name || 'Magazin');
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-
-  const options = [
-    {
-      icon: '🗺️', bg: '#dbeafe',
-      title: 'Google Maps',
-      desc: 'Deschide în Google Maps',
-      url: `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`
-    },
-    {
-      icon: '🚗', bg: '#dcfce7',
-      title: 'Waze',
-      desc: 'Deschide în Waze',
-      url: `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`
-    }
-  ];
-
+  const appleBtn = document.getElementById('navApple');
   if (isIOS) {
-    options.push({
-      icon: '🍎', bg: '#f1f5f9',
-      title: 'Apple Maps',
-      desc: 'Deschide în Apple Maps',
-      url: `https://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`
-    });
+    appleBtn.style.display = 'flex';
+    appleBtn.href = `https://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`;
+  } else {
+    appleBtn.style.display = 'none';
   }
-
-  options.push({
-    icon: '📋', bg: '#fef3c7',
-    title: 'Copiază coordonatele',
-    desc: `${lat}, ${lng}`,
-    action: 'copy'
-  });
-
-  const container = document.getElementById('navOptions');
-  container.innerHTML = options.map((o, i) => `
-    <a class="nav-option" ${o.url ? `href="${o.url}" target="_blank" rel="noopener"` : `onclick="copyCoords();return false;"`} data-idx="${i}">
-      <div class="nav-icon" style="background:${o.bg}">${o.icon}</div>
-      <div style="flex:1;">
-        <div style="font-weight:600;">${o.title}</div>
-        <div style="font-size:11px;color:#64748b;">${o.desc}</div>
-      </div>
-      <div style="color:#94a3b8;">›</div>
-    </a>
-  `).join('');
 
   document.getElementById('navModal').classList.add('open');
 }
 
 function copyCoords() {
-  if (!navStore) return;
-  const txt = `${navStore.lat}, ${navStore.lng}`;
-  navigator.clipboard.writeText(txt).then(() => {
-    toast('✅ Coordonate copiate');
-    closeModal('navModal');
-  }).catch(() => {
-    prompt('Copiați manual:', txt);
-  });
+  if (!navTarget) return;
+  const txt = `${navTarget.lat}, ${navTarget.lng}`;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(txt).then(() => {
+      toast('✅ Copiat');
+      closeM('navModal');
+    }).catch(() => prompt('Copiați:', txt));
+  } else {
+    prompt('Copiați:', txt);
+  }
 }
 
-/* ---------- EVENIMENTE ---------- */
-document.getElementById('searchInput').addEventListener('input', renderList);
-document.getElementById('regionFilter').addEventListener('change', renderList);
-document.getElementById('filterSelect').addEventListener('change', renderList);
+/* EVENTS */
+document.getElementById('search').addEventListener('input', render);
+document.getElementById('filter').addEventListener('change', render);
 
-/* ---------- PORNIRE ---------- */
+/* START */
 initMap();
-loadStores();
+load();
 </script>
 </body>
 </html>
