@@ -167,7 +167,7 @@ button{cursor:pointer;border:none}
   <div id="list"></div>
 </section>
 
-<!-- Add / Edit -->
+<!-- Edit -->
 <div class="scrim" id="formModal">
   <div class="dlg" role="dialog" aria-modal="true">
     <div class="h"></div>
@@ -210,7 +210,7 @@ button{cursor:pointer;border:none}
 
 <script>
 /* ⚠️ PUNEȚI AICI LINKUL APPS SCRIPT */
-const API_URL = "https://script.google.com/macros/s/AKfycbyPOsBcnW2d8kHf1-vzT5ynRenybxocEc08wTw1MIvBJt2K9jWPXhKa0foPzUYLLe1oKQ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwv43cTHKr3iaaHVNKqk0IPUg-fCAjAWbyWwdnKi0InsbEhOqmBJn24puh7MwH7uZgb0w/exec";
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -221,7 +221,33 @@ let selected = null, cityFilter = null;
 let form = { row:null, loc:null, changed:false };
 let snap = 1;
 
-/* ---------- coordonate (neschimbat) ---------- */
+/* ============================================================
+   🔧 NORMALIZARE NUME ORAȘ (rezolvă grupare incorectă)
+   ============================================================ */
+function normalizeCity(city) {
+  if (!city) return '';
+  return String(city)
+    // حذف کاراکترهای نامرئی (ZWSP, ZWNJ, RTL/LTR marks, BOM)
+    .replace(/[\u200B-\u200F\u202A-\u202E\uFEFF]/g, '')
+    // تبدیل هر نوع فاصله (tab, NBSP, ...) به فاصله معمولی
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+    // یکسان‌سازی diacritice رومانیایی
+    .replace(/[şș]/g, 's')
+    .replace(/[ţț]/g, 't')
+    .replace(/[ăâ]/g, 'a')
+    .replace(/[îí]/g, 'i')
+    // حذف اعراب عربی/فارسی
+    .replace(/[\u064B-\u065F\u0670]/g, '')
+    // یکسان‌سازی ی و ک فارسی/عربی
+    .replace(/[ىي]/g, 'ی')
+    .replace(/[كک]/g, 'ک');
+}
+
+/* ============================================================
+   🔧 PARSARE COORDONATE
+   ============================================================ */
 function parseCoord(val, type) {
   if (val === null || val === undefined) return null;
   const num = parseFloat(String(val).trim().replace(',', '.').replace(/\s+/g, ''));
@@ -235,11 +261,16 @@ function getCoords(s) {
   if (lat !== null && lng !== null && Math.abs(lat) > 90 && Math.abs(lng) <= 90) [lat, lng] = [lng, lat];
   return (lat === null || lng === null) ? null : [lat, lng];
 }
+
 const PATTERNS = [
-  /@(-?\d+\.?\d*),(-?\d+\.?\d*)/, /[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/, /[?&]ll=(-?\d+\.?\d*),(-?\d+\.?\d*)/,
-  /[?&]center=(-?\d+\.?\d*),(-?\d+\.?\d*)/, /!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/,
+  /@(-?\d+\.?\d*),(-?\d+\.?\d*)/,
+  /[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/,
+  /[?&]ll=(-?\d+\.?\d*),(-?\d+\.?\d*)/,
+  /[?&]center=(-?\d+\.?\d*),(-?\d+\.?\d*)/,
+  /!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/,
   /ll\.(-?\d+\.?\d*)(?:,|%2C)(-?\d+\.?\d*)/i,
-  /\/place\/(-?\d+\.?\d*),(-?\d+\.?\d*)/, /^(-?\d+\.?\d*)\s*[,;]\s*(-?\d+\.?\d*)$/
+  /\/place\/(-?\d+\.?\d*),(-?\d+\.?\d*)/,
+  /^(-?\d+\.?\d*)\s*[,;]\s*(-?\d+\.?\d*)$/
 ];
 function matchCoords(text) {
   for (const p of PATTERNS) {
@@ -287,7 +318,9 @@ async function reverseGeocode(lat, lng) {
   } catch(e) { return ''; }
 }
 
-/* ---------- API ---------- */
+/* ============================================================
+   API
+   ============================================================ */
 const apiGet = p => fetch(API_URL + "?" + new URLSearchParams(p), {redirect:'follow'}).then(r => r.json());
 const apiPost = p => fetch(API_URL, {
   method:'POST', body:new URLSearchParams(p).toString(),
@@ -299,7 +332,9 @@ function toast(msg, dur = 2400) {
   clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), dur);
 }
 
-/* ---------- hartă ---------- */
+/* ============================================================
+   HARTĂ
+   ============================================================ */
 const dark = window.matchMedia('(prefers-color-scheme:dark)');
 function setTiles() {
   if (tiles) map.removeLayer(tiles);
@@ -314,7 +349,9 @@ function initMap() {
 }
 function pinIcon(sel) { return L.divIcon({ className:'pin' + (sel ? ' sel' : ''), html:'<i></i>', iconSize:[26,26], iconAnchor:[13,26] }); }
 
-/* ---------- panou glisant ---------- */
+/* ============================================================
+   PANOU GLISANT
+   ============================================================ */
 function snaps() { const H = window.innerHeight; return [96, Math.round(H * .46), Math.round(H * .86)]; }
 function setSheet(px, drag) {
   document.documentElement.style.setProperty('--sh', px + 'px');
@@ -338,7 +375,9 @@ function goSnap(i) { snap = i; setSheet(snaps()[i]); }
   });
 })();
 
-/* ---------- date ---------- */
+/* ============================================================
+   ÎNCĂRCARE DATE
+   ============================================================ */
 async function load() {
   $('list').innerHTML = '<div class="sk"></div><div class="sk"></div><div class="sk"></div>';
   try {
@@ -348,6 +387,9 @@ async function load() {
   } catch(e) { toast('Fără conexiune. Încearcă din nou.'); render(); }
 }
 
+/* ============================================================
+   RANDARE LISTĂ (cu grupare corectă a orașelor)
+   ============================================================ */
 function render() {
   const q = $('search').value.trim().toLowerCase();
   $('clear').classList.toggle('on', !!q);
@@ -357,44 +399,78 @@ function render() {
 
   Object.values(pins).forEach(m => map.removeLayer(m)); pins = {};
 
-  /* 1. lista de orașe */
+  /* 1. lista de orașe — grupare cu cheie normalizată */
   if (!inCity && !q) {
-    const counts = {};
-    stores.forEach(s => { const c = (s.region || '').trim(); counts[c] = (counts[c] || 0) + 1; });
-    const cities = Object.keys(counts).sort((a, b) => !a ? 1 : !b ? -1 : a.localeCompare(b, 'ro'));
-    $('count').textContent = cities.length === 1 ? '1 oraș' : `${cities.length} orașe`;
+    const groups = new Map(); // key → { display, count }
+    stores.forEach(s => {
+      const raw = (s.region || '').trim();
+      const key = normalizeCity(raw);
+      if (!groups.has(key)) groups.set(key, { display: raw, count: 0 });
+      groups.get(key).count++;
+    });
+
+    // مرتب‌سازی: orașe alfabetic, "Fără oraș" ultimul
+    const entries = [...groups.entries()].sort((a, b) => {
+      if (!a[0]) return 1;
+      if (!b[0]) return -1;
+      return a[0].localeCompare(b[0], 'ro');
+    });
+
+    $('count').textContent = entries.length === 1 ? '1 oraș' : `${entries.length} orașe`;
     $('total').textContent = `${stores.length} magazine`;
-    list.innerHTML = cities.length ? cities.map(c => {
-      const n = counts[c], label = c || 'Fără oraș';
-      return `<div class="city" data-c="${esc(c)}"><div class="ico">${esc(label.charAt(0).toUpperCase())}</div>
-        <div class="meta"><div class="nm">${esc(label)}</div><div class="cc">${n === 1 ? '1 magazin' : n + ' magazine'}</div></div>
-        <span class="chev">›</span></div>`;
+
+    list.innerHTML = entries.length ? entries.map(([key, g]) => {
+      const label = g.display || 'Fără oraș';
+      const n = g.count;
+      return `<div class="city" data-key="${esc(key)}">
+        <div class="ico">${esc(label.charAt(0).toUpperCase())}</div>
+        <div class="meta">
+          <div class="nm">${esc(label)}</div>
+          <div class="cc">${n === 1 ? '1 magazin' : n + ' magazine'}</div>
+        </div>
+        <span class="chev">›</span>
+      </div>`;
     }).join('') : '<div class="empty">Nu s-au găsit magazine.<br>Verifică linkul Apps Script.</div>';
     return;
   }
 
-  /* 2. magazinele orașului (sau rezultatele căutării) */
-  const filtered = stores.filter(s =>
-    (!q || (s.name || '').toLowerCase().includes(q)) && (!inCity || (s.region || '').trim() === cityFilter));
-  $('count').textContent = inCity ? (cityFilter || 'Fără oraș') : 'Rezultate';
+  /* 2. magazinele unui oraș (sau rezultatele căutării) — comparare normalizată */
+  const cityKey = inCity ? normalizeCity(cityFilter) : null;
+  const filtered = stores.filter(s => {
+    if (q && !(s.name || '').toLowerCase().includes(q)) return false;
+    if (inCity && normalizeCity(s.region || '') !== cityKey) return false;
+    return true;
+  });
+
+  // Titlu
+  if (inCity) {
+    const sample = stores.find(s => normalizeCity(s.region || '') === cityKey);
+    $('count').textContent = (sample?.region || '').trim() || 'Fără oraș';
+  } else {
+    $('count').textContent = 'Rezultate';
+  }
   $('total').textContent = filtered.length === 1 ? '1 magazin' : `${filtered.length} magazine`;
 
   if (!filtered.length) {
     list.innerHTML = '<div class="empty">Niciun magazin nu se potrivește.<br>Încearcă alt nume.</div>';
     return;
   }
+
   list.innerHTML = filtered.map(s => {
     const has = !!getCoords(s), name = s.name || 'Fără nume';
     return `<div class="card ${s.rowIndex === selected ? 'active' : ''}" data-row="${s.rowIndex}">
       <div class="row">
         <div class="ico">${esc(name.trim().charAt(0).toUpperCase())}</div>
-        <div class="meta"><div class="nm">${esc(name)}</div>
-          <div class="sub">${!inCity && s.region ? esc(s.region) : ''}${has ? '' : '<span class="nolo">Fără locație</span>'}</div></div>
+        <div class="meta">
+          <div class="nm">${esc(name)}</div>
+          <div class="sub">${!inCity && s.region ? esc(s.region) : ''}${has ? '' : '<span class="nolo">Fără locație</span>'}</div>
+        </div>
       </div>
       <div class="acts">
         <button class="go" data-go="${s.rowIndex}" ${has ? '' : 'disabled'}>🧭 Navighează</button>
         <button class="ed" data-ed="${s.rowIndex}" aria-label="Editează locația">✏️</button>
-      </div></div>`;
+      </div>
+    </div>`;
   }).join('');
 
   const visible = [];
@@ -425,7 +501,9 @@ function select(row, fromPin) {
   if (card && fromPin) card.scrollIntoView({ block:'nearest', behavior:'smooth' });
 }
 
-/* ---------- editare locație ---------- */
+/* ============================================================
+   EDITARE LOCAȚIE
+   ============================================================ */
 function setPreview(state, html) {
   const p = $('f_pv'); p.className = 'pv on ' + state; p.innerHTML = html;
 }
@@ -449,7 +527,7 @@ function openForm(row) {
   $('formModal').classList.add('open');
 }
 
-/* orașul rămâne cel din tabel; doar dacă lipsește se caută automat */
+/* شهر موجود در Sheet حفظ می‌شود؛ فقط اگر خالی بود از reverse geocode پر می‌شود */
 async function setNewLoc(lat, lng, label) {
   const s = curStore();
   const city = ((s && s.region) || '').trim() || await reverseGeocode(lat, lng);
@@ -507,7 +585,9 @@ function closeM(id) { $(id).classList.remove('open'); }
 $('formModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeM('formModal'); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.scrim.open').forEach(s => s.classList.remove('open')); });
 
-/* ---------- navigare ---------- */
+/* ============================================================
+   NAVIGARE
+   ============================================================ */
 function openNav(row) {
   const s = stores.find(x => x.rowIndex === row), c = s && getCoords(s);
   if (!c) return toast('Fără locație');
@@ -521,7 +601,9 @@ function openNav(row) {
   $('navModal').classList.add('open');
 }
 
-/* ---------- evenimente ---------- */
+/* ============================================================
+   EVENIMENTE
+   ============================================================ */
 $('list').addEventListener('click', e => {
   const go = e.target.closest('[data-go]'), ed = e.target.closest('[data-ed]'), card = e.target.closest('.card');
   if (go) return openNav(+go.dataset.go);
@@ -530,9 +612,12 @@ $('list').addEventListener('click', e => {
 });
 $('list').addEventListener('click', e => {
   const c = e.target.closest('.city'); if (!c) return;
-  cityFilter = c.dataset.c; selected = null; $('search').value = '';
+  cityFilter = c.dataset.key;
+  selected = null;
+  $('search').value = '';
   if (!wide() && snap === 2) goSnap(1);
-  render(); $('list').scrollTop = 0;
+  render();
+  $('list').scrollTop = 0;
 });
 $('back').onclick = () => {
   cityFilter = null; selected = null; render();
