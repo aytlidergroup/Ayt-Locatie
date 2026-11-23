@@ -15,7 +15,6 @@
     height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
   }
 
-  /* HEADER */
   header {
     background: linear-gradient(135deg,#1e3a8a,#2563eb);
     color: white; padding: 12px 14px;
@@ -32,7 +31,6 @@
   }
   .add-btn:active { background: rgba(255,255,255,.4); }
 
-  /* SEARCH */
   .search-box {
     background: white; padding: 10px 14px;
     display: flex; gap: 8px; flex-shrink: 0;
@@ -50,20 +48,17 @@
     background: #f8fafc; max-width: 110px;
   }
 
-  /* MAP */
   #map {
     height: 220px; width: 100%; flex-shrink: 0;
     border-bottom: 2px solid #e2e8f0;
   }
 
-  /* COUNT */
   #countBar {
     padding: 8px 14px; background: #f8fafc; font-size: 12px;
     color: #475569; border-bottom: 1px solid #e2e8f0;
     flex-shrink: 0;
   }
 
-  /* LIST */
   #list {
     flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
     background: white;
@@ -75,15 +70,7 @@
   .card:active { background: #f1f5f9; }
   .card.active { background: #dbeafe; border-left: 4px solid #2563eb; }
 
-  .card-head {
-    display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
-  }
-  .num-badge {
-    background: #1e3a8a; color: white; font-size: 11px;
-    font-weight: 700; padding: 3px 10px; border-radius: 12px;
-    flex-shrink: 0;
-  }
-  .card-title { font-size: 15px; font-weight: 600; flex: 1; }
+  .card-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
 
   .card-line {
     font-size: 13px; color: #475569; margin-top: 4px;
@@ -117,7 +104,6 @@
   .card-actions button:active { opacity: .7; }
   .card-actions button:disabled { opacity: .4; }
 
-  /* MODAL */
   .modal-bg {
     position: fixed; inset: 0; background: rgba(15,23,42,.6);
     display: none; z-index: 1000;
@@ -166,10 +152,16 @@
     background: #d97706; color: white; padding: 12px;
     font-size: 13px; font-weight: 700; border: none;
     border-radius: 10px; cursor: pointer; width: 100%;
+    margin-bottom: 8px; font-family: inherit;
+  }
+  .btn-geocode {
+    background: #2563eb; color: white; padding: 12px;
+    font-size: 13px; font-weight: 700; border: none;
+    border-radius: 10px; cursor: pointer; width: 100%;
     margin-bottom: 14px; font-family: inherit;
   }
+  .btn-geocode:disabled { opacity: .6; }
 
-  /* NAV OPTIONS */
   .nav-option {
     display: flex; align-items: center; gap: 14px;
     padding: 15px 16px; background: #f8fafc;
@@ -185,7 +177,6 @@
   }
   .nav-option .ntext { flex: 1; font-weight: 600; }
 
-  /* TOAST */
   #toast {
     position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
     background: #0f172a; color: white; padding: 12px 22px;
@@ -195,7 +186,6 @@
   }
   #toast.show { opacity: 1; }
 
-  /* LOADING */
   #loading {
     position: fixed; inset: 0; background: rgba(255,255,255,.85);
     display: none; align-items: center; justify-content: center;
@@ -218,7 +208,7 @@
 </header>
 
 <div class="search-box">
-  <input type="text" id="search" placeholder="🔍 Caută...">
+  <input type="text" id="search" placeholder="🔍 Caută nume, adresă, regiune...">
   <select id="filter">
     <option value="all">Toate</option>
     <option value="has">Cu locație</option>
@@ -235,16 +225,16 @@
   <div class="modal">
     <div class="modal-handle"></div>
     <h2>➕ Magazin nou</h2>
-    <div class="field"><label>Număr (A)</label><input id="a_num" inputmode="numeric"></div>
-    <div class="field"><label>Nume magazin (B) *</label><input id="a_name"></div>
-    <div class="field"><label>Adresă (C)</label><input id="a_addr"></div>
-    <div class="field"><label>Regiune (G)</label><input id="a_region"></div>
-    <div class="field"><label>Link Google Maps (D)</label><input id="a_map"></div>
+    <div class="field"><label>Nume magazin *</label><input id="a_name"></div>
+    <div class="field"><label>Adresă</label><input id="a_addr" placeholder="Strada, număr, oraș..."></div>
+    <div class="field"><label>Regiune / Oraș</label><input id="a_region"></div>
+    <button class="btn-geocode" id="a_geocodeBtn" onclick="geocode('a')">🌍 Găsește locația din adresă</button>
+    <div class="field"><label>Link Google Maps</label><input id="a_map" placeholder="https://maps.google.com/..."></div>
     <div class="coords">
-      <div class="field"><label>Long (E)</label><input id="a_lng" inputmode="decimal"></div>
-      <div class="field"><label>Lat (F)</label><input id="a_lat" inputmode="decimal"></div>
+      <div class="field"><label>Long</label><input id="a_lng" inputmode="decimal"></div>
+      <div class="field"><label>Lat</label><input id="a_lat" inputmode="decimal"></div>
     </div>
-    <button class="btn-gps" onclick="gps('a_')">📍 Folosește locația mea</button>
+    <button class="btn-gps" onclick="gps('a')">📍 Folosește locația mea</button>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeM('addModal')">Anulează</button>
       <button class="btn-save" onclick="saveAdd()">💾 Salvează</button>
@@ -258,16 +248,16 @@
     <div class="modal-handle"></div>
     <h2>✏️ Editează</h2>
     <input type="hidden" id="e_row">
-    <div class="field"><label>Număr (A)</label><input id="e_num" inputmode="numeric"></div>
-    <div class="field"><label>Nume magazin (B) *</label><input id="e_name"></div>
-    <div class="field"><label>Adresă (C)</label><input id="e_addr"></div>
-    <div class="field"><label>Regiune (G)</label><input id="e_region"></div>
-    <div class="field"><label>Link Google Maps (D)</label><input id="e_map"></div>
+    <div class="field"><label>Nume magazin *</label><input id="e_name"></div>
+    <div class="field"><label>Adresă</label><input id="e_addr"></div>
+    <div class="field"><label>Regiune / Oraș</label><input id="e_region"></div>
+    <button class="btn-geocode" id="e_geocodeBtn" onclick="geocode('e')">🌍 Găsește locația din adresă</button>
+    <div class="field"><label>Link Google Maps</label><input id="e_map"></div>
     <div class="coords">
-      <div class="field"><label>Long (E)</label><input id="e_lng" inputmode="decimal"></div>
-      <div class="field"><label>Lat (F)</label><input id="e_lat" inputmode="decimal"></div>
+      <div class="field"><label>Long</label><input id="e_lng" inputmode="decimal"></div>
+      <div class="field"><label>Lat</label><input id="e_lat" inputmode="decimal"></div>
     </div>
-    <button class="btn-gps" onclick="gps('e_')">📍 Folosește locația mea</button>
+    <button class="btn-gps" onclick="gps('e')">📍 Folosește locația mea</button>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeM('editModal')">Anulează</button>
       <button class="btn-save" onclick="saveEdit()">💾 Salvează</button>
@@ -310,7 +300,49 @@ let stores = [];
 let map, markersLayer;
 let navTarget = null;
 
-/* MAP */
+/* ============================================================
+   🔧 PARSARE CORECTĂ A COORDONATELOR (rezolvă problema țării greșite)
+   ============================================================ */
+function parseCoord(val, type) {
+  if (val === null || val === undefined) return null;
+  // Convertim la string și înlocuim virgula zecimală cu punct
+  let s = String(val).trim().replace(',', '.');
+  // Eliminăm spații
+  s = s.replace(/\s+/g, '');
+  const num = parseFloat(s);
+  if (isNaN(num)) return null;
+
+  // Verificare interval valid
+  if (type === 'lat' && (num < -90 || num > 90)) return null;
+  if (type === 'lng' && (num < -180 || num > 180)) return null;
+  return num;
+}
+
+/* Returnează [lat, lng] corect sau null. Detectează și inversarea. */
+function getCoords(s) {
+  let lat = parseCoord(s.lat, 'lat');
+  let lng = parseCoord(s.lng, 'lng');
+
+  // Dacă lat lipsește sau e invalid, dar lng e valid ca lat → inversate
+  if (lat === null && lng !== null) {
+    const tmpLat = parseCoord(s.lng, 'lat');
+    const tmpLng = parseCoord(s.lat, 'lng');
+    if (tmpLat !== null && tmpLng !== null) { lat = tmpLat; lng = tmpLng; }
+  }
+
+  // Dacă lat e în interval de longitudine și lng în interval de latitudine → inversate
+  if (lat !== null && lng !== null) {
+    if (Math.abs(lat) > 90 && Math.abs(lng) <= 90) {
+      [lat, lng] = [lng, lat];
+    }
+  }
+
+  if (lat === null || lng === null) return null;
+  return [lat, lng];
+}
+
+/* ============================================================ */
+
 function initMap() {
   map = L.map('map', { zoomControl: false }).setView([45.9432, 24.9668], 7);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -319,7 +351,6 @@ function initMap() {
   markersLayer = L.layerGroup().addTo(map);
 }
 
-/* API */
 const apiGet = p => fetch(API_URL + "?" + new URLSearchParams(p), {redirect:'follow'}).then(r=>r.json());
 const apiPost = p => fetch(API_URL, {
   method: 'POST',
@@ -327,16 +358,14 @@ const apiPost = p => fetch(API_URL, {
   headers: {'Content-Type':'application/x-www-form-urlencoded'}
 }).then(r=>r.json());
 
-/* UI helpers */
 const showLoad = s => document.getElementById('loading').classList.toggle('show', s);
 function toast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
   clearTimeout(t._t);
-  t._t = setTimeout(() => t.classList.remove('show'), 2200);
+  t._t = setTimeout(() => t.classList.remove('show'), 2400);
 }
 
-/* LOAD DATA */
 async function load() {
   showLoad(true);
   try {
@@ -349,39 +378,35 @@ async function load() {
   finally { showLoad(false); }
 }
 
-/* RENDER LIST + MAP */
 function render() {
   const q = document.getElementById('search').value.trim().toLowerCase();
   const filter = document.getElementById('filter').value;
 
   const filtered = stores.filter(s => {
-    const text = `${s.number} ${s.name} ${s.address} ${s.region}`.toLowerCase();
+    const text = `${s.name} ${s.address} ${s.region}`.toLowerCase();
     if (q && !text.includes(q)) return false;
-    const hasLoc = parseFloat(s.lat) && parseFloat(s.lng);
-    if (filter === 'has' && !hasLoc) return false;
-    if (filter === 'no' && hasLoc) return false;
+    const coords = getCoords(s);
+    if (filter === 'has' && !coords) return false;
+    if (filter === 'no' && coords) return false;
     return true;
   });
 
   document.getElementById('count').textContent =
     `${filtered.length} din ${stores.length} magazine`;
 
-  /* list */
   const list = document.getElementById('list');
   list.innerHTML = '';
   if (!filtered.length) {
     list.innerHTML = '<div style="padding:40px 20px;text-align:center;color:#94a3b8;">Niciun rezultat</div>';
   } else {
     filtered.forEach(s => {
-      const hasLoc = parseFloat(s.lat) && parseFloat(s.lng);
+      const coords = getCoords(s);
+      const hasLoc = !!coords;
       const div = document.createElement('div');
       div.className = 'card';
       div.dataset.row = s.rowIndex;
       div.innerHTML = `
-        <div class="card-head">
-          <span class="num-badge">${s.number || '—'}</span>
-          <div class="card-title">${s.name || 'Fără nume'}</div>
-        </div>
+        <div class="card-title">${s.name || 'Fără nume'}</div>
         <div class="card-line"><span class="icon">📍</span>${s.address || 'Fără adresă'}</div>
         ${s.region ? `<span class="region-chip">🗺️ ${s.region}</span>` : ''}
         <span class="status ${hasLoc ? 'has' : 'no'}">${hasLoc ? '✓ Are locație' : '✗ Fără locație'}</span>
@@ -396,40 +421,42 @@ function render() {
     });
   }
 
-  /* markers */
   markersLayer.clearLayers();
   stores.forEach(s => {
-    const lat = parseFloat(s.lat), lng = parseFloat(s.lng);
-    if (!lat || !lng) return;
-    L.marker([lat, lng]).addTo(markersLayer).bindPopup(
+    const coords = getCoords(s);
+    if (!coords) return;
+    L.marker(coords).addTo(markersLayer).bindPopup(
       `<b>${s.name || ''}</b><br><small>${s.address || ''}</small>`
     );
   });
 }
 
-/* SHOW ON MAP */
 function showOnMap(rowIndex) {
   const s = stores.find(x => x.rowIndex === rowIndex);
   if (!s) return;
-  const lat = parseFloat(s.lat), lng = parseFloat(s.lng);
+  const coords = getCoords(s);
+
   document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
   const card = document.querySelector(`.card[data-row="${rowIndex}"]`);
   if (card) card.classList.add('active');
 
-  if (!lat || !lng) { toast('Fără locație — editați pentru a adăuga'); return; }
-  map.setView([lat, lng], 16);
+  if (!coords) {
+    toast('Fără locație — editați pentru a adăuga');
+    return;
+  }
+  map.setView(coords, 16);
   document.getElementById('map').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-/* ADD */
+/* ---------- ADĂUGARE ---------- */
 function openAdd() {
-  ['a_num','a_name','a_addr','a_region','a_map','a_lng','a_lat']
+  ['a_name','a_addr','a_region','a_map','a_lng','a_lat']
     .forEach(id => document.getElementById(id).value = '');
   document.getElementById('addModal').classList.add('open');
 }
 async function saveAdd() {
   const data = {
-    number: document.getElementById('a_num').value,
+    number: '',
     name: document.getElementById('a_name').value,
     address: document.getElementById('a_addr').value,
     region: document.getElementById('a_region').value,
@@ -447,12 +474,11 @@ async function saveAdd() {
   finally { showLoad(false); }
 }
 
-/* EDIT */
+/* ---------- EDITARE ---------- */
 function openEdit(rowIndex) {
   const s = stores.find(x => x.rowIndex === rowIndex);
   if (!s) return;
   document.getElementById('e_row').value = rowIndex;
-  document.getElementById('e_num').value = s.number || '';
   document.getElementById('e_name').value = s.name || '';
   document.getElementById('e_addr').value = s.address || '';
   document.getElementById('e_region').value = s.region || '';
@@ -464,7 +490,7 @@ function openEdit(rowIndex) {
 async function saveEdit() {
   const data = {
     rowIndex: parseInt(document.getElementById('e_row').value),
-    number: document.getElementById('e_num').value,
+    number: '',
     name: document.getElementById('e_name').value,
     address: document.getElementById('e_addr').value,
     region: document.getElementById('e_region').value,
@@ -480,17 +506,16 @@ async function saveEdit() {
       toast('✅ Salvat');
       closeM('editModal');
       await load();
-      const lat = parseFloat(data.lat), lng = parseFloat(data.lng);
-      if (lat && lng) map.setView([lat, lng], 16);
+      const coords = getCoords(data);
+      if (coords) map.setView(coords, 16);
     } else toast('Eroare: ' + res.message);
   } catch(e) { toast('Eroare conexiune'); }
   finally { showLoad(false); }
 }
 
-/* CLOSE */
 function closeM(id) { document.getElementById(id).classList.remove('open'); }
 
-/* GPS */
+/* ---------- GPS ---------- */
 function gps(prefix) {
   if (!navigator.geolocation) { toast('GPS indisponibil'); return; }
   toast('Se obține locația...');
@@ -498,9 +523,9 @@ function gps(prefix) {
     pos => {
       const lat = pos.coords.latitude.toFixed(7);
       const lng = pos.coords.longitude.toFixed(7);
-      document.getElementById(prefix + 'lat').value = lat;
-      document.getElementById(prefix + 'lng').value = lng;
-      document.getElementById(prefix + 'map').value = `https://www.google.com/maps?q=${lat},${lng}`;
+      document.getElementById(prefix + '_lat').value = lat;
+      document.getElementById(prefix + '_lng').value = lng;
+      document.getElementById(prefix + '_map').value = `https://www.google.com/maps?q=${lat},${lng}`;
       toast('✅ Locație setată');
     },
     err => toast('Eroare GPS: ' + err.message),
@@ -508,12 +533,53 @@ function gps(prefix) {
   );
 }
 
-/* NAVIGARE */
+/* ============================================================
+   🌍 GEOCODING: adresă → coordonate (Nominatim / OpenStreetMap)
+   ============================================================ */
+async function geocode(prefix) {
+  const addr = document.getElementById(prefix + '_addr').value.trim();
+  const region = document.getElementById(prefix + '_region').value.trim();
+  if (!addr) { toast('Introduceți adresa mai întâi'); return; }
+
+  const query = [addr, region].filter(Boolean).join(', ');
+  const btn = document.getElementById(prefix + '_geocodeBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Se caută...';
+
+  try {
+    // Nominatim — gratuit, fără cheie API
+    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
+    const res = await fetch(url, {
+      headers: { 'Accept': 'application/json' }
+    });
+    const data = await res.json();
+
+    if (!data.length) {
+      toast('❌ Adresa nu a fost găsită. Încercați mai detaliat.');
+      return;
+    }
+
+    const { lat, lon, display_name } = data[0];
+    document.getElementById(prefix + '_lat').value = parseFloat(lat).toFixed(7);
+    document.getElementById(prefix + '_lng').value = parseFloat(lon).toFixed(7);
+    document.getElementById(prefix + '_map').value =
+      `https://www.google.com/maps?q=${lat},${lon}`;
+    toast('✅ Locație găsită: ' + display_name.split(',').slice(0, 2).join(','));
+  } catch(e) {
+    toast('Eroare căutare: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🌍 Găsește locația din adresă';
+  }
+}
+
+/* ---------- NAVIGARE ---------- */
 function openNav(rowIndex) {
   const s = stores.find(x => x.rowIndex === rowIndex);
   if (!s) return;
-  const lat = parseFloat(s.lat), lng = parseFloat(s.lng);
-  if (!lat || !lng) { toast('Fără locație'); return; }
+  const coords = getCoords(s);
+  if (!coords) { toast('Fără locație'); return; }
+  const [lat, lng] = coords;
   navTarget = { lat, lng };
 
   document.getElementById('navGoogle').href =
@@ -546,11 +612,9 @@ function copyCoords() {
   }
 }
 
-/* EVENTS */
 document.getElementById('search').addEventListener('input', render);
 document.getElementById('filter').addEventListener('change', render);
 
-/* START */
 initMap();
 load();
 </script>
