@@ -14,7 +14,6 @@
     background: #f1f5f9; color: #0f172a;
     height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
   }
-
   header {
     background: linear-gradient(135deg,#1e3a8a,#2563eb);
     color: white; padding: 12px 14px;
@@ -26,8 +25,8 @@
   .add-btn {
     background: rgba(255,255,255,.2); border: none; color: white;
     width: 40px; height: 40px; border-radius: 10px;
-    font-size: 22px; cursor: pointer; display: flex;
-    align-items: center; justify-content: center;
+    font-size: 22px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
   }
   .add-btn:active { background: rgba(255,255,255,.4); }
 
@@ -45,40 +44,22 @@
   .search-box select {
     padding: 11px 8px; border: 1.5px solid #e2e8f0;
     border-radius: 10px; font-size: 13px; font-family: inherit;
-    background: #f8fafc; max-width: 110px;
+    background: #f8fafc; max-width: 120px;
   }
 
-  #map {
-    height: 220px; width: 100%; flex-shrink: 0;
-    border-bottom: 2px solid #e2e8f0;
-  }
-
+  #map { height: 220px; width: 100%; flex-shrink: 0; border-bottom: 2px solid #e2e8f0; }
   #countBar {
     padding: 8px 14px; background: #f8fafc; font-size: 12px;
-    color: #475569; border-bottom: 1px solid #e2e8f0;
-    flex-shrink: 0;
+    color: #475569; border-bottom: 1px solid #e2e8f0; flex-shrink: 0;
   }
+  #list { flex: 1; overflow-y: auto; background: white; -webkit-overflow-scrolling: touch; }
 
-  #list {
-    flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch;
-    background: white;
-  }
-  .card {
-    padding: 14px; border-bottom: 1px solid #e2e8f0;
-    cursor: pointer;
-  }
+  .card { padding: 14px; border-bottom: 1px solid #e2e8f0; cursor: pointer; }
   .card:active { background: #f1f5f9; }
   .card.active { background: #dbeafe; border-left: 4px solid #2563eb; }
-
   .card-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
-
-  .card-line {
-    font-size: 13px; color: #475569; margin-top: 4px;
-    display: flex; gap: 6px;
-  }
-  .card-line .icon { flex-shrink: 0; }
-
-  .region-chip {
+  .card-line { font-size: 13px; color: #475569; margin-top: 4px; display: flex; gap: 6px; }
+  .city-chip {
     display: inline-block; font-size: 11px; padding: 3px 9px;
     background: #ede9fe; color: #6d28d9; border-radius: 10px;
     margin-top: 6px; font-weight: 600;
@@ -89,14 +70,10 @@
   }
   .status.has { background: #dcfce7; color: #166534; }
   .status.no { background: #fee2e2; color: #991b1b; }
-
-  .card-actions {
-    display: flex; gap: 8px; margin-top: 12px;
-  }
+  .card-actions { display: flex; gap: 8px; margin-top: 12px; }
   .card-actions button {
     flex: 1; padding: 10px; font-size: 13px; font-weight: 600;
-    border: none; border-radius: 8px; cursor: pointer;
-    font-family: inherit;
+    border: none; border-radius: 8px; cursor: pointer; font-family: inherit;
   }
   .btn-map { background: #dbeafe; color: #1e40af; }
   .btn-nav { background: #16a34a; color: white; }
@@ -106,8 +83,7 @@
 
   .modal-bg {
     position: fixed; inset: 0; background: rgba(15,23,42,.6);
-    display: none; z-index: 1000;
-    align-items: flex-end;
+    display: none; z-index: 1000; align-items: flex-end;
   }
   .modal-bg.open { display: flex; }
   .modal {
@@ -115,52 +91,42 @@
     border-radius: 20px 20px 0 0;
     padding: 20px 18px;
     padding-bottom: max(20px, env(safe-area-inset-bottom));
-    max-height: 92dvh; overflow-y: auto;
-    animation: slideUp .25s;
+    max-height: 92dvh; overflow-y: auto; animation: slideUp .25s;
   }
-  @keyframes slideUp {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
-  }
-  .modal-handle {
-    width: 40px; height: 4px; background: #cbd5e1;
-    border-radius: 2px; margin: 0 auto 16px;
-  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-handle { width: 40px; height: 4px; background: #cbd5e1; border-radius: 2px; margin: 0 auto 16px; }
   .modal h2 { font-size: 17px; margin-bottom: 16px; text-align: center; }
   .field { margin-bottom: 12px; }
-  .field label {
-    display: block; font-size: 12px; color: #475569;
-    margin-bottom: 5px; font-weight: 600;
-  }
+  .field label { display: block; font-size: 12px; color: #475569; margin-bottom: 5px; font-weight: 600; }
   .field input {
     width: 100%; padding: 12px 14px;
     border: 1.5px solid #e2e8f0; border-radius: 10px;
     font-family: inherit; font-size: 15px; background: #f8fafc;
   }
   .field input:focus { outline: none; border-color: #2563eb; background: white; }
-  .coords { display: flex; gap: 8px; }
-  .coords .field { flex: 1; }
+  .hint { font-size: 11px; color: #64748b; margin-top: 5px; line-height: 1.5; }
   .modal-actions { display: flex; gap: 8px; margin-top: 18px; }
   .modal-actions button {
     flex: 1; padding: 13px; font-size: 14px; font-weight: 700;
-    border: none; border-radius: 10px; cursor: pointer;
-    font-family: inherit;
+    border: none; border-radius: 10px; cursor: pointer; font-family: inherit;
   }
   .btn-cancel { background: #e2e8f0; color: #475569; }
   .btn-save { background: #16a34a; color: white; }
-  .btn-gps {
-    background: #d97706; color: white; padding: 12px;
-    font-size: 13px; font-weight: 700; border: none;
-    border-radius: 10px; cursor: pointer; width: 100%;
-    margin-bottom: 8px; font-family: inherit;
+  .btn-save:disabled { opacity: .5; }
+
+  /* Status card în modal */
+  .preview-box {
+    background: #f0fdf4; border: 1.5px solid #86efac;
+    border-radius: 10px; padding: 12px; margin-bottom: 12px;
+    font-size: 13px; color: #166534;
   }
-  .btn-geocode {
-    background: #2563eb; color: white; padding: 12px;
-    font-size: 13px; font-weight: 700; border: none;
-    border-radius: 10px; cursor: pointer; width: 100%;
-    margin-bottom: 14px; font-family: inherit;
+  .preview-box.error {
+    background: #fef2f2; border-color: #fca5a5; color: #991b1b;
   }
-  .btn-geocode:disabled { opacity: .6; }
+  .preview-box.loading {
+    background: #eff6ff; border-color: #93c5fd; color: #1e40af;
+  }
+  .preview-box b { font-weight: 700; }
 
   .nav-option {
     display: flex; align-items: center; gap: 14px;
@@ -208,11 +174,9 @@
 </header>
 
 <div class="search-box">
-  <input type="text" id="search" placeholder="🔍 Caută nume, adresă, regiune...">
-  <select id="filter">
-    <option value="all">Toate</option>
-    <option value="has">Cu locație</option>
-    <option value="no">Fără locație</option>
+  <input type="text" id="search" placeholder="🔍 Nume magazin...">
+  <select id="cityFilter">
+    <option value="">Toate orașele</option>
   </select>
 </div>
 
@@ -225,19 +189,27 @@
   <div class="modal">
     <div class="modal-handle"></div>
     <h2>➕ Magazin nou</h2>
-    <div class="field"><label>Nume magazin *</label><input id="a_name"></div>
-    <div class="field"><label>Adresă</label><input id="a_addr" placeholder="Strada, număr, oraș..."></div>
-    <div class="field"><label>Regiune / Oraș</label><input id="a_region"></div>
-    <button class="btn-geocode" id="a_geocodeBtn" onclick="geocode('a')">🌍 Găsește locația din adresă</button>
-    <div class="field"><label>Link Google Maps</label><input id="a_map" placeholder="https://maps.google.com/..."></div>
-    <div class="coords">
-      <div class="field"><label>Long</label><input id="a_lng" inputmode="decimal"></div>
-      <div class="field"><label>Lat</label><input id="a_lat" inputmode="decimal"></div>
+
+    <div class="field">
+      <label>Nume magazin *</label>
+      <input id="a_name" placeholder="ex: Mega Image Lipscani">
     </div>
-    <button class="btn-gps" onclick="gps('a')">📍 Folosește locația mea</button>
+
+    <div class="field">
+      <label>Locație (link Google Maps / Waze / Apple Maps)</label>
+      <input id="a_link" placeholder="Lipiți link sau folosiți butonul de jos">
+      <div class="hint">Acceptă: google.com/maps, goo.gl/maps, waze.com, maps.apple.com</div>
+    </div>
+
+    <div id="a_preview" style="display:none;"></div>
+
+    <button class="btn-gps" onclick="gps('a')" style="background:#d97706;color:white;padding:13px;border:none;border-radius:10px;width:100%;font-size:14px;font-weight:700;margin-bottom:12px;font-family:inherit;cursor:pointer;">
+      📍 Folosește locația mea acum
+    </button>
+
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeM('addModal')">Anulează</button>
-      <button class="btn-save" onclick="saveAdd()">💾 Salvează</button>
+      <button class="btn-save" id="a_saveBtn" onclick="saveAdd()">💾 Salvează</button>
     </div>
   </div>
 </div>
@@ -246,18 +218,25 @@
 <div class="modal-bg" id="editModal" onclick="if(event.target===this)closeM('editModal')">
   <div class="modal">
     <div class="modal-handle"></div>
-    <h2>✏️ Editează</h2>
+    <h2>✏️ Editează magazin</h2>
     <input type="hidden" id="e_row">
-    <div class="field"><label>Nume magazin *</label><input id="e_name"></div>
-    <div class="field"><label>Adresă</label><input id="e_addr"></div>
-    <div class="field"><label>Regiune / Oraș</label><input id="e_region"></div>
-    <button class="btn-geocode" id="e_geocodeBtn" onclick="geocode('e')">🌍 Găsește locația din adresă</button>
-    <div class="field"><label>Link Google Maps</label><input id="e_map"></div>
-    <div class="coords">
-      <div class="field"><label>Long</label><input id="e_lng" inputmode="decimal"></div>
-      <div class="field"><label>Lat</label><input id="e_lat" inputmode="decimal"></div>
+
+    <div class="field">
+      <label>Nume magazin *</label>
+      <input id="e_name">
     </div>
-    <button class="btn-gps" onclick="gps('e')">📍 Folosește locația mea</button>
+
+    <div class="field">
+      <label>Locație (link nou)</label>
+      <input id="e_link" placeholder="Lăsați gol pentru a păstra locația existentă">
+    </div>
+
+    <div id="e_preview" style="display:none;"></div>
+
+    <button class="btn-gps" onclick="gps('e')" style="background:#d97706;color:white;padding:13px;border:none;border-radius:10px;width:100%;font-size:14px;font-weight:700;margin-bottom:12px;font-family:inherit;cursor:pointer;">
+      📍 Folosește locația mea acum
+    </button>
+
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeM('editModal')">Anulează</button>
       <button class="btn-save" onclick="saveEdit()">💾 Salvează</button>
@@ -282,9 +261,6 @@
       <div class="nicon" style="background:#f1f5f9;">🍎</div>
       <div class="ntext">Apple Maps</div>
     </a>
-    <button class="btn-gps" onclick="copyCoords()" style="background:#fef3c7;color:#92400e;margin-top:10px;">
-      📋 Copiază coordonatele
-    </button>
     <button class="btn-cancel" style="width:100%;padding:13px;border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;" onclick="closeM('navModal')">Închide</button>
   </div>
 </div>
@@ -299,46 +275,161 @@ const API_URL = "https://script.google.com/macros/s/AKfycbyPOsBcnW2d8kHf1-vzT5yn
 let stores = [];
 let map, markersLayer;
 let navTarget = null;
+let pendingLocation = { add: null, edit: null }; // {lat, lng, city, mapLink}
 
 /* ============================================================
-   🔧 PARSARE CORECTĂ A COORDONATELOR (rezolvă problema țării greșite)
+   🔧 PARSARE COORDONATE (rezolvă problema cu virgula)
    ============================================================ */
 function parseCoord(val, type) {
   if (val === null || val === undefined) return null;
-  // Convertim la string și înlocuim virgula zecimală cu punct
-  let s = String(val).trim().replace(',', '.');
-  // Eliminăm spații
-  s = s.replace(/\s+/g, '');
+  let s = String(val).trim().replace(',', '.').replace(/\s+/g, '');
   const num = parseFloat(s);
   if (isNaN(num)) return null;
-
-  // Verificare interval valid
   if (type === 'lat' && (num < -90 || num > 90)) return null;
   if (type === 'lng' && (num < -180 || num > 180)) return null;
   return num;
 }
-
-/* Returnează [lat, lng] corect sau null. Detectează și inversarea. */
 function getCoords(s) {
   let lat = parseCoord(s.lat, 'lat');
   let lng = parseCoord(s.lng, 'lng');
-
-  // Dacă lat lipsește sau e invalid, dar lng e valid ca lat → inversate
-  if (lat === null && lng !== null) {
-    const tmpLat = parseCoord(s.lng, 'lat');
-    const tmpLng = parseCoord(s.lat, 'lng');
-    if (tmpLat !== null && tmpLng !== null) { lat = tmpLat; lng = tmpLng; }
+  if (lat !== null && lng !== null && Math.abs(lat) > 90 && Math.abs(lng) <= 90) {
+    [lat, lng] = [lng, lat];
   }
+  if (lat === null || lng === null) return null;
+  return [lat, lng];
+}
 
-  // Dacă lat e în interval de longitudine și lng în interval de latitudine → inversate
-  if (lat !== null && lng !== null) {
-    if (Math.abs(lat) > 90 && Math.abs(lng) <= 90) {
-      [lat, lng] = [lng, lat];
+/* ============================================================
+   🔗 EXTRAGERE COORDONATE DIN ORICE LINK
+   Acceptă: Google Maps, goo.gl/maps, Waze, Apple Maps
+   ============================================================ */
+async function extractCoordsFromLink(url) {
+  if (!url) return null;
+  url = url.trim();
+
+  // 1. Coordonate directe în URL (pattern simplu)
+  // Ex: @44.4268,26.1025 sau ?q=44.4268,26.1025 sau /44.4268,26.1025
+  const patterns = [
+    /@(-?\d+\.?\d*),(-?\d+\.?\d*)/,           // google maps @lat,lng
+    /[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/,      // ?q=lat,lng
+    /[?&]ll=(-?\d+\.?\d*),(-?\d+\.?\d*)/,     // waze ll=
+    /[?&]center=(-?\d+\.?\d*),(-?\d+\.?\d*)/, // center=
+    /!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/,       // google maps data !3d!4d
+    /\/place\/(-?\d+\.?\d*),(-?\d+\.?\d*)/,   // /place/lat,lng
+    /^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/     // direct lat,lng
+  ];
+
+  for (const p of patterns) {
+    const m = url.match(p);
+    if (m) {
+      const lat = parseFloat(m[1]);
+      const lng = parseFloat(m[2]);
+      if (!isNaN(lat) && !isNaN(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+        return { lat, lng };
+      }
     }
   }
 
-  if (lat === null || lng === null) return null;
-  return [lat, lng];
+  // 2. Linkuri scurte (goo.gl, maps.app.goo.gl, waze.com/ul, apple.co)
+  // — trebuie urmărite (redirect)
+  const isShort = /goo\.gl|maps\.app\.goo\.gl|waze\.com\/ul|apple\.co|maps\.apple\.com/i.test(url);
+  if (isShort) {
+    try {
+      // Folosim un serviciu de expandare CORS-friendly
+      const expandUrl = `https://unshorten.me/api/v2/unshorten?url=${encodeURIComponent(url)}`;
+      // Alternativ: încercăm direct fetch cu no-cors (nu funcționează întotdeauna)
+      // Folosim r.jina.ai ca proxy pentru redirect
+      const proxyUrl = `https://r.jina.ai/${url}`;
+      const res = await fetch(proxyUrl, { method: 'GET' });
+      // Nu putem citi mereu body-ul, dar URL-ul original poate fi în header
+      // Încercăm din nou pattern-urile pe URL-ul redirectat
+      const text = await res.text().catch(() => '');
+
+      // Extragem din text orice coordonate
+      for (const p of patterns) {
+        const m = text.match(p);
+        if (m) {
+          const lat = parseFloat(m[1]);
+          const lng = parseFloat(m[2]);
+          if (!isNaN(lat) && !isNaN(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+            return { lat, lng };
+          }
+        }
+      }
+    } catch(e) {
+      console.warn('Eroare expandare link scurt:', e);
+    }
+  }
+
+  return null;
+}
+
+/* ============================================================
+   🏙️ REVERSE GEOCODING: coordonate → oraș (Nominatim)
+   ============================================================ */
+async function reverseGeocode(lat, lng) {
+  try {
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`;
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    const data = await res.json();
+    if (!data.address) return '';
+    const a = data.address;
+    return a.city || a.town || a.village || a.municipality || a.county || a.state || '';
+  } catch(e) {
+    return '';
+  }
+}
+
+/* ============================================================
+   🔄 PROCESARE COMPLETĂ: link → coords + oraș
+   ============================================================ */
+async function processLocation(input, prefix, previewEl) {
+  previewEl.style.display = 'block';
+  previewEl.className = 'preview-box loading';
+  previewEl.innerHTML = '⏳ Se procesează locația...';
+
+  let coords = null;
+
+  // Verificăm dacă e coordonată directă
+  const directMatch = input.trim().match(/^(-?\d+\.?\d*)\s*[,;]\s*(-?\d+\.?\d*)$/);
+  if (directMatch) {
+    coords = { lat: parseFloat(directMatch[1]), lng: parseFloat(directMatch[2]) };
+  } else {
+    coords = await extractCoordsFromLink(input);
+  }
+
+  if (!coords) {
+    previewEl.className = 'preview-box error';
+    previewEl.innerHTML = '❌ Nu am putut extrage coordonatele. Verificați linkul.';
+    pendingLocation[prefix] = null;
+    return;
+  }
+
+  // Validare
+  if (Math.abs(coords.lat) > 90 || Math.abs(coords.lng) > 180) {
+    previewEl.className = 'preview-box error';
+    previewEl.innerHTML = '❌ Coordonate invalide.';
+    pendingLocation[prefix] = null;
+    return;
+  }
+
+  // Reverse geocode pentru oraș
+  previewEl.innerHTML = '⏳ Se identifică orașul...';
+  const city = await reverseGeocode(coords.lat, coords.lng);
+
+  pendingLocation[prefix] = {
+    lat: coords.lat.toFixed(7),
+    lng: coords.lng.toFixed(7),
+    city: city,
+    mapLink: `https://www.google.com/maps?q=${coords.lat},${coords.lng}`
+  };
+
+  previewEl.className = 'preview-box';
+  previewEl.innerHTML = `
+    <b>✅ Locație detectată</b><br>
+    🏙️ <b>${city || 'Oraș necunoscut'}</b><br>
+    <small style="direction:ltr;display:inline-block;">📍 ${coords.lat.toFixed(6)}, ${coords.lng.toFixed(6)}</small>
+  `;
 }
 
 /* ============================================================ */
@@ -359,11 +450,11 @@ const apiPost = p => fetch(API_URL, {
 }).then(r=>r.json());
 
 const showLoad = s => document.getElementById('loading').classList.toggle('show', s);
-function toast(msg) {
+function toast(msg, dur = 2400) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
   clearTimeout(t._t);
-  t._t = setTimeout(() => t.classList.remove('show'), 2400);
+  t._t = setTimeout(() => t.classList.remove('show'), dur);
 }
 
 async function load() {
@@ -372,22 +463,29 @@ async function load() {
     const res = await apiGet({ action: 'getAll' });
     if (res.success) {
       stores = res.data;
+      populateCities();
       render();
     } else toast('Eroare: ' + res.message);
   } catch(e) { toast('Eroare conexiune'); }
   finally { showLoad(false); }
 }
 
+function populateCities() {
+  const cities = [...new Set(stores.map(s => (s.region || '').trim()).filter(Boolean))].sort();
+  const sel = document.getElementById('cityFilter');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Toate orașele</option>' +
+    cities.map(c => `<option value="${c}">${c}</option>`).join('');
+  sel.value = current;
+}
+
 function render() {
   const q = document.getElementById('search').value.trim().toLowerCase();
-  const filter = document.getElementById('filter').value;
+  const city = document.getElementById('cityFilter').value;
 
   const filtered = stores.filter(s => {
-    const text = `${s.name} ${s.address} ${s.region}`.toLowerCase();
-    if (q && !text.includes(q)) return false;
-    const coords = getCoords(s);
-    if (filter === 'has' && !coords) return false;
-    if (filter === 'no' && coords) return false;
+    if (q && !(s.name || '').toLowerCase().includes(q)) return false;
+    if (city && (s.region || '').trim() !== city) return false;
     return true;
   });
 
@@ -407,11 +505,10 @@ function render() {
       div.dataset.row = s.rowIndex;
       div.innerHTML = `
         <div class="card-title">${s.name || 'Fără nume'}</div>
-        <div class="card-line"><span class="icon">📍</span>${s.address || 'Fără adresă'}</div>
-        ${s.region ? `<span class="region-chip">🗺️ ${s.region}</span>` : ''}
+        ${s.region ? `<span class="city-chip">🏙️ ${s.region}</span>` : ''}
         <span class="status ${hasLoc ? 'has' : 'no'}">${hasLoc ? '✓ Are locație' : '✗ Fără locație'}</span>
         <div class="card-actions">
-          <button class="btn-map" onclick="event.stopPropagation();showOnMap(${s.rowIndex})">🗺️ Hartă</button>
+          <button class="btn-map" onclick="event.stopPropagation();showOnMap(${s.rowIndex})" ${hasLoc ? '' : 'disabled'}>🗺️ Hartă</button>
           <button class="btn-nav" onclick="event.stopPropagation();openNav(${s.rowIndex})" ${hasLoc ? '' : 'disabled'}>🧭 Navighează</button>
           <button class="btn-edit" onclick="event.stopPropagation();openEdit(${s.rowIndex})">✏️</button>
         </div>
@@ -426,7 +523,7 @@ function render() {
     const coords = getCoords(s);
     if (!coords) return;
     L.marker(coords).addTo(markersLayer).bindPopup(
-      `<b>${s.name || ''}</b><br><small>${s.address || ''}</small>`
+      `<b>${s.name || ''}</b>${s.region ? `<br><small>${s.region}</small>` : ''}`
     );
   });
 }
@@ -435,36 +532,45 @@ function showOnMap(rowIndex) {
   const s = stores.find(x => x.rowIndex === rowIndex);
   if (!s) return;
   const coords = getCoords(s);
-
   document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
   const card = document.querySelector(`.card[data-row="${rowIndex}"]`);
   if (card) card.classList.add('active');
-
-  if (!coords) {
-    toast('Fără locație — editați pentru a adăuga');
-    return;
-  }
+  if (!coords) { toast('Fără locație'); return; }
   map.setView(coords, 16);
   document.getElementById('map').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /* ---------- ADĂUGARE ---------- */
 function openAdd() {
-  ['a_name','a_addr','a_region','a_map','a_lng','a_lat']
-    .forEach(id => document.getElementById(id).value = '');
+  document.getElementById('a_name').value = '';
+  document.getElementById('a_link').value = '';
+  document.getElementById('a_preview').style.display = 'none';
+  pendingLocation.add = null;
   document.getElementById('addModal').classList.add('open');
 }
+
+document.getElementById('a_link').addEventListener('change', async e => {
+  const url = e.target.value.trim();
+  if (!url) return;
+  await processLocation(url, 'add', document.getElementById('a_preview'));
+});
+
 async function saveAdd() {
+  const name = document.getElementById('a_name').value.trim();
+  if (!name) { toast('Numele e obligatoriu'); return; }
+
+  const loc = pendingLocation.add;
+  if (!loc) { toast('Adăugați un link sau folosiți GPS'); return; }
+
   const data = {
     number: '',
-    name: document.getElementById('a_name').value,
-    address: document.getElementById('a_addr').value,
-    region: document.getElementById('a_region').value,
-    mapAddress: document.getElementById('a_map').value,
-    lng: document.getElementById('a_lng').value,
-    lat: document.getElementById('a_lat').value
+    name: name,
+    address: '',
+    mapAddress: loc.mapLink,
+    lng: loc.lng,
+    lat: loc.lat,
+    region: loc.city
   };
-  if (!data.name.trim()) { toast('Numele e obligatoriu'); return; }
   showLoad(true);
   try {
     const res = await apiPost({ action: 'add', data: JSON.stringify(data) });
@@ -480,25 +586,53 @@ function openEdit(rowIndex) {
   if (!s) return;
   document.getElementById('e_row').value = rowIndex;
   document.getElementById('e_name').value = s.name || '';
-  document.getElementById('e_addr').value = s.address || '';
-  document.getElementById('e_region').value = s.region || '';
-  document.getElementById('e_map').value = s.mapAddress || '';
-  document.getElementById('e_lng').value = s.lng || '';
-  document.getElementById('e_lat').value = s.lat || '';
+  document.getElementById('e_link').value = '';
+  document.getElementById('e_preview').style.display = 'none';
+  pendingLocation.edit = null;
+
+  const coords = getCoords(s);
+  if (coords) {
+    pendingLocation.edit = {
+      lat: coords[0].toFixed(7),
+      lng: coords[1].toFixed(7),
+      city: s.region || '',
+      mapLink: s.mapAddress || `https://www.google.com/maps?q=${coords[0]},${coords[1]}`
+    };
+    const pv = document.getElementById('e_preview');
+    pv.style.display = 'block';
+    pv.className = 'preview-box';
+    pv.innerHTML = `
+      <b>Locație existentă</b><br>
+      🏙️ <b>${s.region || 'Necunoscut'}</b><br>
+      <small style="direction:ltr;display:inline-block;">📍 ${coords[0].toFixed(6)}, ${coords[1].toFixed(6)}</small>
+    `;
+  }
+
   document.getElementById('editModal').classList.add('open');
 }
+
+document.getElementById('e_link').addEventListener('change', async e => {
+  const url = e.target.value.trim();
+  if (!url) return;
+  await processLocation(url, 'edit', document.getElementById('e_preview'));
+});
+
 async function saveEdit() {
+  const name = document.getElementById('e_name').value.trim();
+  if (!name) { toast('Numele e obligatoriu'); return; }
+  const loc = pendingLocation.edit;
+  if (!loc) { toast('Nu există locație'); return; }
+
   const data = {
     rowIndex: parseInt(document.getElementById('e_row').value),
     number: '',
-    name: document.getElementById('e_name').value,
-    address: document.getElementById('e_addr').value,
-    region: document.getElementById('e_region').value,
-    mapAddress: document.getElementById('e_map').value,
-    lng: document.getElementById('e_lng').value,
-    lat: document.getElementById('e_lat').value
+    name: name,
+    address: '',
+    mapAddress: loc.mapLink,
+    lng: loc.lng,
+    lat: loc.lat,
+    region: loc.city
   };
-  if (!data.name.trim()) { toast('Numele e obligatoriu'); return; }
   showLoad(true);
   try {
     const res = await apiPost({ action: 'update', data: JSON.stringify(data) });
@@ -520,57 +654,33 @@ function gps(prefix) {
   if (!navigator.geolocation) { toast('GPS indisponibil'); return; }
   toast('Se obține locația...');
   navigator.geolocation.getCurrentPosition(
-    pos => {
-      const lat = pos.coords.latitude.toFixed(7);
-      const lng = pos.coords.longitude.toFixed(7);
-      document.getElementById(prefix + '_lat').value = lat;
-      document.getElementById(prefix + '_lng').value = lng;
-      document.getElementById(prefix + '_map').value = `https://www.google.com/maps?q=${lat},${lng}`;
+    async pos => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const previewEl = document.getElementById(prefix + '_preview');
+      previewEl.style.display = 'block';
+      previewEl.className = 'preview-box loading';
+      previewEl.innerHTML = '⏳ Se identifică orașul...';
+
+      const city = await reverseGeocode(lat, lng);
+      pendingLocation[prefix] = {
+        lat: lat.toFixed(7),
+        lng: lng.toFixed(7),
+        city: city,
+        mapLink: `https://www.google.com/maps?q=${lat},${lng}`
+      };
+
+      previewEl.className = 'preview-box';
+      previewEl.innerHTML = `
+        <b>✅ Locație GPS detectată</b><br>
+        🏙️ <b>${city || 'Oraș necunoscut'}</b><br>
+        <small style="direction:ltr;display:inline-block;">📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}</small>
+      `;
       toast('✅ Locație setată');
     },
     err => toast('Eroare GPS: ' + err.message),
-    { enableHighAccuracy: true, timeout: 15000 }
+    { enableHighAccuracy: true, timeout: 20000 }
   );
-}
-
-/* ============================================================
-   🌍 GEOCODING: adresă → coordonate (Nominatim / OpenStreetMap)
-   ============================================================ */
-async function geocode(prefix) {
-  const addr = document.getElementById(prefix + '_addr').value.trim();
-  const region = document.getElementById(prefix + '_region').value.trim();
-  if (!addr) { toast('Introduceți adresa mai întâi'); return; }
-
-  const query = [addr, region].filter(Boolean).join(', ');
-  const btn = document.getElementById(prefix + '_geocodeBtn');
-  btn.disabled = true;
-  btn.textContent = '⏳ Se caută...';
-
-  try {
-    // Nominatim — gratuit, fără cheie API
-    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
-    const res = await fetch(url, {
-      headers: { 'Accept': 'application/json' }
-    });
-    const data = await res.json();
-
-    if (!data.length) {
-      toast('❌ Adresa nu a fost găsită. Încercați mai detaliat.');
-      return;
-    }
-
-    const { lat, lon, display_name } = data[0];
-    document.getElementById(prefix + '_lat').value = parseFloat(lat).toFixed(7);
-    document.getElementById(prefix + '_lng').value = parseFloat(lon).toFixed(7);
-    document.getElementById(prefix + '_map').value =
-      `https://www.google.com/maps?q=${lat},${lon}`;
-    toast('✅ Locație găsită: ' + display_name.split(',').slice(0, 2).join(','));
-  } catch(e) {
-    toast('Eroare căutare: ' + e.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '🌍 Găsește locația din adresă';
-  }
 }
 
 /* ---------- NAVIGARE ---------- */
@@ -595,25 +705,11 @@ function openNav(rowIndex) {
   } else {
     appleBtn.style.display = 'none';
   }
-
   document.getElementById('navModal').classList.add('open');
 }
 
-function copyCoords() {
-  if (!navTarget) return;
-  const txt = `${navTarget.lat}, ${navTarget.lng}`;
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(txt).then(() => {
-      toast('✅ Copiat');
-      closeM('navModal');
-    }).catch(() => prompt('Copiați:', txt));
-  } else {
-    prompt('Copiați:', txt);
-  }
-}
-
 document.getElementById('search').addEventListener('input', render);
-document.getElementById('filter').addEventListener('change', render);
+document.getElementById('cityFilter').addEventListener('change', render);
 
 initMap();
 load();
