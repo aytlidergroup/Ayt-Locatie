@@ -33,7 +33,7 @@
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
 body{font-family:'Plus Jakarta Sans',-apple-system,Roboto,Tahoma,sans-serif;background:var(--bg);color:var(--ink);overflow:hidden;position:fixed;inset:0}
-button,input{font-family:inherit;color:inherit}
+button,input,select{font-family:inherit;color:inherit}
 button{cursor:pointer;border:none}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
@@ -122,6 +122,18 @@ button{cursor:pointer;border:none}
 .city .cc{font-size:12.5px;color:var(--muted);margin-top:3px}
 .city .chev{color:var(--muted);font-size:22px}
 .inp input:disabled{opacity:.6;background:var(--line);cursor:not-allowed}
+.inp select{
+  flex:1;
+  min-width:0;
+  height:50px;
+  padding:0 14px;
+  border:1.5px solid var(--line);
+  border-radius:14px;
+  font-size:15px;
+  font-weight:600;
+  background:var(--bg);
+}
+.inp select:focus{outline:none;border-color:var(--accent);background:var(--surface)}
 
 /* dialogs */
 .scrim{position:fixed;inset:0;z-index:1000;background:rgba(8,14,26,.55);display:none;align-items:flex-end;justify-content:center}
@@ -202,6 +214,15 @@ button{cursor:pointer;border:none}
       <div class="hint">Numele este unic și nu poate fi modificat.</div>
     </div>
     <div class="fld">
+      <label for="f_city">Oraș (coloana H)</label>
+      <div class="inp">
+        <select id="f_city">
+          <option value="">— Fără oraș (gol) —</option>
+        </select>
+      </div>
+      <div class="hint">Selectează orașul din lista coloanei H sau lasă gol. Poți modifica oricând.</div>
+    </div>
+    <div class="fld">
       <label for="f_link">Link locație</label>
       <div class="inp">
         <input id="f_link" inputmode="url" placeholder="Lipește linkul aici" autocomplete="off">
@@ -234,15 +255,15 @@ button{cursor:pointer;border:none}
 
 <script>
 /* ⚠️ PUNEȚI AICI LINKUL APPS SCRIPT */
-const API_URL = "https://script.google.com/macros/s/AKfycbwv43cTHKr3iaaHVNKqk0IPUg-fCAjAWbyWwdnKi0InsbEhOqmBJn24puh7MwH7uZgb0w/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwNcPzRNRqFOYzPDM5wpCNx1GOOvszqW3MIZHZx8An3-6sH8IDdUkXvGYkWOmMHXSvkew/exec";
 
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const wide = () => window.matchMedia('(min-width:820px)').matches;
 
-let stores = [], map, tiles, pins = {}, meMarker;
+let stores = [], cityOptions = [], map, tiles, pins = {}, meMarker;
 let selected = null, cityFilter = null;
-let form = { row:null, loc:null, changed:false };
+let form = { row:null, loc:null, initialCity:'', locChanged:false, cityChanged:false };
 let snap = 1;
 
 /* ============================================================
@@ -329,13 +350,6 @@ async function extractCoordsFromLink(url) {
   }
   return null;
 }
-async function reverseGeocode(lat, lng) {
-  try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10&addressdetails=1`, { headers:{Accept:'application/json'} });
-    const a = (await res.json()).address;
-    return a ? (a.city || a.town || a.village || a.municipality || a.county || a.state || '') : '';
-  } catch(e) { return ''; }
-}
 
 /* ============================================================
    API
@@ -401,8 +415,17 @@ async function load() {
   $('list').innerHTML = '<div class="sk"></div><div class="sk"></div><div class="sk"></div>';
   try {
     const res = await apiGet({ action:'getAll' });
-    if (res.success) { stores = res.data; render(); }
-    else toast('Eroare: ' + res.message);
+    if (res.success) {
+      stores = res.data || [];
+      if (Array.isArray(res.cityOptions) && res.cityOptions.length) {
+        cityOptions = res.cityOptions;
+      } else {
+        const set = new Set();
+        stores.forEach(s => { if (s.hValue && String(s.hValue).trim()) set.add(String(s.hValue).trim()); });
+        cityOptions = Array.from(set).sort((a, b) => a.localeCompare(b, 'ro'));
+      }
+      render();
+    } else toast('Eroare: ' + res.message);
   } catch(e) { toast('Fără conexiune. Încearcă din nou.'); render(); }
 }
 
@@ -519,37 +542,81 @@ function select(row, fromPin) {
 }
 
 /* ============================================================
-   EDITARE LOCAȚIE
+   EDITARE LOCAȚIE + COMBOBOX ORAȘ (COLOANA H)
    ============================================================ */
+function populateCitySelect(currentCity) {
+  const sel = $('f_city');
+  const trimmedCurrent = (currentCity || '').trim();
+  const options = [...cityOptions];
+
+  if (trimmedCurrent && !options.some(o => normalizeCity(o) === normalizeCity(trimmedCurrent))) {
+    options.unshift(trimmedCurrent);
+  }
+
+  sel.innerHTML = '<option value="">— Fără oraș (gol) —</option>' +
+    options.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+
+  const matched = options.find(o => normalizeCity(o) === normalizeCity(trimmedCurrent));
+  sel.value = matched || '';
+}
+
 function setPreview(state, html) {
   const p = $('f_pv'); p.className = 'pv on ' + state; p.innerHTML = html;
 }
 function showLoc(loc, label) {
-  setPreview('ok', `<span class="pi">✅</span><div><b>${esc(label)}</b>${loc.city ? ' · ' + esc(loc.city) : ''}<small>${(+loc.lat).toFixed(5)}, ${(+loc.lng).toFixed(5)}</small></div>`);
+  const cityLabel = $('f_city').value.trim() || loc.city || '';
+  setPreview('ok', `<span class="pi">✅</span><div><b>${esc(label)}</b>${cityLabel ? ' · ' + esc(cityLabel) : ''}<small>${(+loc.lat).toFixed(5)}, ${(+loc.lng).toFixed(5)}</small></div>`);
 }
-function checkForm() { $('saveBtn').disabled = !(form.loc && form.changed); }
+function checkForm() {
+  const curCity = $('f_city').value.trim();
+  form.cityChanged = normalizeCity(curCity) !== normalizeCity(form.initialCity);
+  const canSave = (form.locChanged || (form.cityChanged && !!form.loc));
+  $('saveBtn').disabled = !canSave;
+}
 const curStore = () => stores.find(x => x.rowIndex === form.row);
 
 function openForm(row) {
   const s = stores.find(x => x.rowIndex === row); if (!s) return;
-  form = { row, loc:null, changed:false };
+  const initCity = (s.region || '').trim();
+  form = { row, loc:null, initialCity:initCity, locChanged:false, cityChanged:false };
   $('f_link').value = ''; $('f_pv').className = 'pv';
   $('f_name').value = s.name || '';
+  populateCitySelect(initCity);
+
   const c = getCoords(s);
   if (c) {
-    form.loc = { lat:c[0].toFixed(7), lng:c[1].toFixed(7), city:(s.region || '').trim(), mapLink:s.mapAddress || `https://www.google.com/maps?q=${c[0]},${c[1]}` };
+    form.loc = {
+      lat:c[0].toFixed(7),
+      lng:c[1].toFixed(7),
+      city:initCity,
+      mapLink:s.mapAddress || `https://www.google.com/maps?q=${c[0]},${c[1]}`
+    };
     showLoc(form.loc, 'Locația actuală');
   }
   checkForm();
   $('formModal').classList.add('open');
 }
 
+$('f_city').addEventListener('change', () => {
+  const selectedCity = $('f_city').value.trim();
+  if (form.loc) {
+    form.loc.city = selectedCity;
+    showLoc(form.loc, form.locChanged ? 'Locație găsită' : 'Locația actuală');
+  }
+  checkForm();
+});
+
 async function setNewLoc(lat, lng, label) {
-  const s = curStore();
-  const city = ((s && s.region) || '').trim() || await reverseGeocode(lat, lng);
-  form.loc = { lat:lat.toFixed(7), lng:lng.toFixed(7), city, mapLink:`https://www.google.com/maps?q=${lat},${lng}` };
-  form.changed = true;
-  showLoc(form.loc, label); checkForm();
+  const selectedCity = $('f_city').value.trim();
+  form.loc = {
+    lat:lat.toFixed(7),
+    lng:lng.toFixed(7),
+    city:selectedCity,
+    mapLink:`https://www.google.com/maps?q=${lat},${lng}`
+  };
+  form.locChanged = true;
+  showLoc(form.loc, label);
+  checkForm();
 }
 
 async function processLink(input) {
@@ -557,7 +624,7 @@ async function processLink(input) {
   setPreview('ld', '<span class="pi">⏳</span><div>Se caută locația…</div>');
   const c = await extractCoordsFromLink(input);
   if (!c) {
-    form.loc = null; form.changed = false;
+    form.loc = null; form.locChanged = false;
     setPreview('err', '<span class="pi">⚠️</span><div>Nu am găsit coordonate în link. Verifică linkul sau folosește locația ta.</div>');
     checkForm(); return;
   }
@@ -582,13 +649,22 @@ $('gpsBtn').onclick = () => {
 $('saveBtn').onclick = async () => {
   const s = curStore(), loc = form.loc;
   if (!s || !loc) return;
-  const data = { rowIndex:form.row, number:s.number ?? '', name:s.name, address:s.address ?? '',
-    mapAddress:loc.mapLink, lng:loc.lng, lat:loc.lat, region:loc.city };
+  const finalCity = $('f_city').value.trim();
+  const data = {
+    rowIndex:form.row,
+    number:s.number ?? '',
+    name:s.name,
+    address:s.address ?? '',
+    mapAddress:loc.mapLink,
+    lng:loc.lng,
+    lat:loc.lat,
+    region:finalCity
+  };
   const btn = $('saveBtn'); btn.disabled = true; btn.textContent = 'Se salvează…';
   try {
     const res = await apiPost({ action:'update', data:JSON.stringify(data) });
     if (res.success) {
-      closeM('formModal'); toast('Locație salvată');
+      closeM('formModal'); toast('Salvat');
       selected = form.row;
       await load();
       const c = getCoords(data); if (c) fit([c]);
