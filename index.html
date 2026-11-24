@@ -82,6 +82,9 @@ button{cursor:pointer;border:none}
 .pin.sel i{background:#ef4444;transform:rotate(-45deg) scale(1.3)}
 .me{width:16px;height:16px;border-radius:50%;background:#2f6bff;border:3px solid #fff;box-shadow:0 0 0 6px rgba(47,107,255,.25)}
 
+/* bule oraș */
+.cb{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;background:var(--accent);color:var(--accent-ink);border:3px solid #fff;font-weight:800;font-size:13px;box-shadow:0 3px 10px rgba(0,0,0,.35)}
+
 /* sheet */
 #sheet{position:absolute;z-index:500;left:0;right:0;bottom:0;height:var(--sh);background:var(--surface);border-radius:24px 24px 0 0;box-shadow:0 -10px 34px rgba(14,27,44,.2);display:flex;flex-direction:column;transition:height .28s cubic-bezier(.2,.8,.2,1)}
 #sheet.dragging{transition:none}
@@ -400,6 +403,61 @@ function initMap() {
 function pinIcon(sel) { return L.divIcon({ className:'pin' + (sel ? ' sel' : ''), html:'<i></i>', iconSize:[26,26], iconAnchor:[13,26] }); }
 
 /* ============================================================
+   🇷🇴 GRANIȚA ROMÂNIEI + ORAȘE
+   ============================================================ */
+let roLayer = null, roMask = null, cityLayer = null, cityDrawn = null, bubbles = [];
+
+async function fetchBoundary(q) {
+  const key = 'bd:' + q;
+  try { const c = localStorage.getItem(key); if (c) return JSON.parse(c); } catch(e) {}
+  try {
+    const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&polygon_geojson=1&polygon_threshold=0.005&q=' + encodeURIComponent(q));
+    const j = await r.json();
+    const g = j[0] && j[0].geojson;
+    if (g && /Polygon/.test(g.type)) {
+      try { localStorage.setItem(key, JSON.stringify(g)); } catch(e) {}
+      return g;
+    }
+  } catch(e) { console.warn(e); }
+  return null;
+}
+
+async function drawRomania() {
+  const g = await fetchBoundary('Romania');
+  if (!g) return;
+  const polys = g.type === 'Polygon' ? [g.coordinates] : g.coordinates;
+  const holes = polys.map(p => L.GeoJSON.coordsToLatLngs(p[0], 0));
+  roMask = L.polygon([[[-90,-180],[-90,180],[90,180],[90,-180]], ...holes],
+    { stroke:false, fillColor:'#0e1b2c', fillOpacity:.4, interactive:false }).addTo(map);
+  roLayer = L.geoJSON(g, { style:{ color:'#0a8f7a', weight:3, fill:false }, interactive:false }).addTo(map);
+  if (cityFilter === null && !$('search').value.trim()) fitRomania();
+}
+function fitRomania() {
+  if (!roLayer) return;
+  const sh = snaps()[snap];
+  map.fitBounds(roLayer.getBounds(), wide()
+    ? { paddingTopLeft:[420,110], paddingBottomRight:[30,30] }
+    : { paddingTopLeft:[20,110], paddingBottomRight:[20, sh + 20] });
+}
+
+async function drawCity(name) {
+  if (cityDrawn === name) return;
+  cityDrawn = name;
+  if (cityLayer) { map.removeLayer(cityLayer); cityLayer = null; }
+  if (!name) return;
+  const g = await fetchBoundary(name + ', Romania');
+  if (cityDrawn !== name || !g) return;
+  cityLayer = L.geoJSON(g, { style:{ color:'#ef4444', weight:2.5, dashArray:'6 6', fillColor:'#ef4444', fillOpacity:.08 }, interactive:false }).addTo(map);
+}
+
+function openCity(key) {
+  cityFilter = key; selected = null;
+  $('search').value = '';
+  if (!wide() && snap === 2) goSnap(1);
+  render(); $('list').scrollTop = 0;
+}
+
+/* ============================================================
    PANOU GLISANT
    ============================================================ */
 function snaps() { const H = window.innerHeight; return [96, Math.round(H * .46), Math.round(H * .86)]; }
@@ -457,6 +515,8 @@ function render() {
   const list = $('list');
 
   Object.values(pins).forEach(m => map.removeLayer(m)); pins = {};
+  bubbles.forEach(b => map.removeLayer(b)); bubbles = [];
+  if (!inCity) drawCity(null);
 
   /* 1. lista de orașe */
   if (!inCity && !q) {
@@ -464,8 +524,9 @@ function render() {
     stores.forEach(s => {
       const raw = (s.region || '').trim();
       const key = normalizeCity(raw);
-      if (!groups.has(key)) groups.set(key, { display: raw, count: 0 });
-      groups.get(key).count++;
+      if (!groups.has(key)) groups.set(key, { display: raw, count: 0, pts: [] });
+      const g = groups.get(key); g.count++;
+      const c = getCoords(s); if (c) g.pts.push(c);
     });
 
     const entries = [...groups.entries()].sort((a, b) => {
@@ -489,6 +550,16 @@ function render() {
         <span class="chev">›</span>
       </div>`;
     }).join('') : '<div class="empty">Nu s-au găsit magazine.<br>Verifică linkul Apps Script.</div>';
+
+    entries.forEach(([key, g]) => {
+      if (!g.pts.length) return;
+      const lat = g.pts.reduce((a, p) => a + p[0], 0) / g.pts.length;
+      const lng = g.pts.reduce((a, p) => a + p[1], 0) / g.pts.length;
+      bubbles.push(L.marker([lat, lng], {
+        icon: L.divIcon({ className:'', html:`<div class="cb">${g.count}</div>`, iconSize:[38,38] })
+      }).addTo(map).on('click', () => openCity(key)));
+    });
+    fitRomania();
     return;
   }
 
@@ -503,6 +574,7 @@ function render() {
   if (inCity) {
     const sample = stores.find(s => normalizeCity(s.region || '') === cityKey);
     $('count').textContent = (sample?.region || '').trim() || 'Fără oraș';
+    drawCity((sample?.region || '').trim());
   } else {
     $('count').textContent = 'Rezultate';
   }
@@ -720,17 +792,10 @@ $('list').addEventListener('click', e => {
   if (card) select(+card.dataset.row);
 });
 $('list').addEventListener('click', e => {
-  const c = e.target.closest('.city'); if (!c) return;
-  cityFilter = c.dataset.key;
-  selected = null;
-  $('search').value = '';
-  if (!wide() && snap === 2) goSnap(1);
-  render();
-  $('list').scrollTop = 0;
+  const c = e.target.closest('.city'); if (c) openCity(c.dataset.key);
 });
 $('back').onclick = () => {
   cityFilter = null; selected = null; render();
-  map.flyTo([45.9432, 24.9668], 7);
 };
 $('search').addEventListener('input', render);
 $('clear').onclick = () => { $('search').value = ''; render(); $('search').focus(); };
@@ -746,6 +811,7 @@ $('locate').onclick = () => {
 window.addEventListener('resize', () => { if (!wide()) setSheet(snaps()[snap]); map.invalidateSize(); });
 
 initMap();
+drawRomania();
 goSnap(1);
 load();
 </script>
