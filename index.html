@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0e1b2c">
+<title>Ayt-Locatie</title>
+
+<!-- 🎨 LOGO & PWA -->
+<link rel="icon" type="image/jpeg" href="logo.jpeg">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ayt-Locatie">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root{
+  --bg:#eef1f5; --surface:#fff; --ink:#0e1b2c; --muted:#5d6b7e; --line:#e3e8ef;
+  --accent:#0a8f7a; --accent-ink:#fff; --soft:#e0f5f0; --warn:#b4372b; --warnsoft:#fdeceb;
+  --shadow:0 8px 28px rgba(14,27,44,.16); --sh:46dvh;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0b1220; --surface:#131c2e; --ink:#e8eef7; --muted:#92a0b5; --line:#22304a;
+  --accent:#2dd4b0; --accent-ink:#06231d; --soft:#103a34; --warn:#ff8a7a; --warnsoft:#3a1d1b;
+  --shadow:0 8px 28px rgba(0,0,0,.5);
+}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:'Plus Jakarta Sans',-apple-system,Roboto,Tahoma,sans-serif;background:var(--bg);color:var(--ink);overflow:hidden;position:fixed;inset:0}
+button,input,select,textarea{font-family:inherit;color:inherit}
+button{cursor:pointer;border:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+#map{position:absolute;inset:0;z-index:0}
+.leaflet-control-attribution{font-size:9px;opacity:.7}
+@media (prefers-color-scheme:dark){.leaflet-layer.osm{filter:invert(1) hue-rotate(180deg) brightness(.9) contrast(.9) saturate(.7)}}
+
+/* top bar */
+#top{position:absolute;z-index:600;left:12px;right:12px;top:max(12px,env(safe-area-inset-top));display:flex;flex-direction:column;gap:10px;pointer-events:none}
+#top>*{pointer-events:auto}
+.bar{display:flex;gap:8px;align-items:center}
+
+/* 🎨 LOGO în header */
+.brand-logo{
+  width:50px;
+  height:50px;
+  border-radius:16px;
+  object-fit:cover;
+  box-shadow:var(--shadow);
+  flex-shrink:0;
+  background:var(--surface);
+}
+
+.search{flex:1;display:flex;align-items:center;gap:10px;background:var(--surface);border-radius:16px;padding:0 14px;height:50px;box-shadow:var(--shadow)}
+.search svg{flex-shrink:0;color:var(--muted)}
+.search input{flex:1;border:none;background:none;font-size:15px;font-weight:500;min-width:0}
+.search input:focus{outline:none}
+.search input::placeholder{color:var(--muted)}
+.clear{display:none;background:var(--line);width:22px;height:22px;border-radius:50%;color:var(--muted);font-size:13px;line-height:22px}
+.clear.on{display:block}
+
+/* map fabs */
+.fab{position:absolute;z-index:550;right:12px;bottom:calc(var(--sh) + 14px);width:46px;height:46px;border-radius:14px;background:var(--surface);color:var(--ink);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;transition:bottom .28s cubic-bezier(.2,.8,.2,1)}
+.fab:active{transform:scale(.92)}
+.fab.dragging{transition:none}
+
+/* pins */
+.pin{background:none;border:none}
+.pin i{display:block;width:26px;height:26px;background:var(--accent);border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 3px 8px rgba(0,0,0,.35);transition:transform .2s,background .2s}
+.pin.sel i{background:#ef4444;transform:rotate(-45deg) scale(1.3)}
+.me{width:16px;height:16px;border-radius:50%;background:#2f6bff;border:3px solid #fff;box-shadow:0 0 0 6px rgba(47,107,255,.25)}
+
+/* bule oraș */
+.cb{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;background:var(--accent);color:var(--accent-ink);border:3px solid #fff;font-weight:800;font-size:13px;box-shadow:0 3px 10px rgba(0,0,0,.35)}
+
+/* sheet */
+#sheet{position:absolute;z-index:500;left:0;right:0;bottom:0;height:var(--sh);background:var(--surface);border-radius:24px 24px 0 0;box-shadow:0 -10px 34px rgba(14,27,44,.2);display:flex;flex-direction:column;transition:height .28s cubic-bezier(.2,.8,.2,1)}
+#sheet.dragging{transition:none}
+#grab{touch-action:none;padding:10px 18px 12px;cursor:grab;flex-shrink:0}
+#grab .h{width:42px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 10px}
+#grab .t{display:flex;align-items:center;gap:8px}
+#grab b{font-size:16px;font-weight:800}
+#grab span{font-size:12px;color:var(--muted);font-weight:500;margin-left:auto}
+#list{flex:1;overflow-y:auto;padding:0 10px max(16px,env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+
+.card{border-radius:16px;padding:12px;margin-bottom:6px;cursor:pointer;transition:background .15s}
+.card:active{background:var(--bg)}
+.card.active{background:var(--soft)}
+.row{display:flex;align-items:flex-start;gap:12px}
+.ico{width:44px;height:44px;border-radius:14px;background:var(--soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:17px;flex-shrink:0;margin-top:2px}
+.card.active .ico{background:var(--accent);color:var(--accent-ink)}
+.meta{flex:1;min-width:0}
+.nm{
+  font-size:15px;font-weight:700;line-height:1.35;
+  white-space:normal;overflow-wrap:anywhere;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  overflow:hidden;
+}
+.card.active .nm{display:block;-webkit-line-clamp:unset;overflow:visible}
+
+.sub{font-size:12.5px;color:var(--muted);margin-top:3px;display:flex;gap:8px;align-items:center}
+.nolo{background:var(--warnsoft);color:var(--warn);padding:2px 8px;border-radius:8px;font-weight:600;font-size:11.5px}
+.acts{display:none;gap:8px;margin-top:12px}
+.card.active .acts{display:flex}
+.acts button{height:44px;border-radius:12px;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;gap:7px}
+.acts .go{flex:1;background:var(--accent);color:var(--accent-ink)}
+.acts .go:disabled{opacity:.4}
+.acts .ed{width:48px;background:var(--surface);color:var(--ink);border:1.5px solid var(--line)}
+.acts button:active{transform:scale(.96)}
+
+/* 📝 DETALI & 📷 CAMERA — butoane rapide pe card */
+.card-tools{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.info-btn, .cam-btn{
+  width:34px;height:34px;flex-shrink:0;border-radius:50%;
+  background:var(--soft);color:var(--accent);font-size:17px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .12s;
+}
+.info-btn{font-size:19px}
+.cam-btn.has-photo{background:var(--accent);color:var(--accent-ink)}
+.info-btn:active, .cam-btn:active{transform:scale(.9)}
+
+.info-box{
+  display:none;margin:10px 0 0 56px;padding:12px 14px;border-radius:13px;
+  background:var(--bg);color:var(--ink);font-size:13.5px;line-height:1.6;
+  white-space:pre-wrap;overflow-wrap:anywhere;cursor:default;
+}
+.card.info-open .info-box{display:block}
+.info-photo{
+  width:100%;max-height:240px;object-fit:cover;border-radius:10px;
+  margin-top:8px;display:block;border:1px solid var(--line);cursor:zoom-in;
+}
+.info-text + .info-photo{margin-top:10px}
+
+.fld textarea{width:100%;min-height:84px;max-height:200px;resize:vertical;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;font-size:16px;font-family:inherit;background:var(--bg);line-height:1.5}
+.fld textarea:focus{outline:none;border-color:var(--accent);background:var(--surface)}
+
+/* Photo preview în formular */
+.photo-box{display:flex;flex-direction:column;gap:8px}
+.photo-actions{display:flex;gap:8px}
+.photo-actions button{
+  flex:1;height:46px;border-radius:13px;background:var(--soft);color:var(--accent);
+  font-weight:700;font-size:13.5px;display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.photo-actions button.del-photo{flex:0 0 auto;padding:0 14px;background:var(--warnsoft);color:var(--warn)}
+.form-img-wrap{position:relative;border-radius:14px;overflow:hidden;border:1.5px solid var(--line);background:var(--bg)}
+.form-img-wrap img{width:100%;max-height:190px;object-fit:cover;display:block}
+
+/* Lightbox full-screen pentru poză */
+#photoViewer{
+  position:fixed;inset:0;z-index:2500;background:rgba(5,10,18,.92);
+  display:none;align-items:center;justify-content:center;padding:16px;
+}
+#photoViewer.open{display:flex}
+#photoViewer img{max-width:100%;max-height:88dvh;border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.6)}
+#photoViewer .pv-close{
+  position:absolute;top:max(16px,env(safe-area-inset-top));right:16px;
+  width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.16);
+  color:#fff;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center;
+}
+
+.sk{height:68px;border-radius:16px;margin-bottom:8px;background:linear-gradient(90deg,var(--bg) 25%,var(--line) 50%,var(--bg) 75%);background-size:200% 100%;animation:sk 1.2s infinite}
+@keyframes sk{to{background-position:-200% 0}}
+.empty{text-align:center;padding:36px 20px;color:var(--muted);font-size:14px;line-height:1.6}
+.empty button{margin-top:14px;background:var(--accent);color:var(--accent-ink);padding:12px 20px;border-radius:12px;font-weight:700}
+
+.back{width:34px;height:34px;border-radius:11px;background:var(--bg);font-size:24px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding-bottom:3px}
+.back[hidden]{display:none}
+.city{display:flex;align-items:center;gap:12px;padding:12px;border-radius:16px;margin-bottom:6px;cursor:pointer}
+.city:active{background:var(--bg)}
+.city .cc{font-size:12.5px;color:var(--muted);margin-top:3px}
+.city .chev{color:var(--muted);font-size:22px}
+.inp input:disabled{opacity:.6;background:var(--line);cursor:not-allowed}
+.inp select{
+  flex:1;
+  min-width:0;
+  height:50px;
+  padding:0 14px;
+  border:1.5px solid var(--line);
+  border-radius:14px;
+  font-size:15px;
+  font-weight:600;
+  background:var(--bg);
+}
+.inp select:focus{outline:none;border-color:var(--accent);background:var(--surface)}
+.refresh{width:50px;height:50px;border-radius:16px;background:var(--surface);color:var(--ink);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.refresh:active{transform:scale(.92)}
+.refresh.spin svg{animation:rot .8s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* dialogs */
+.scrim{position:fixed;inset:0;z-index:1000;background:rgba(8,14,26,.55);display:none;align-items:flex-end;justify-content:center}
+.scrim.open{display:flex}
+.dlg{background:var(--surface);width:100%;max-width:520px;border-radius:26px 26px 0 0;padding:10px 18px max(20px,env(safe-area-inset-bottom));max-height:92dvh;overflow-y:auto;animation:up .26s cubic-bezier(.2,.8,.2,1)}
+@keyframes up{from{transform:translateY(100%)}}
+.dlg .h{width:42px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 14px}
+.dlg h2{font-size:19px;font-weight:800;margin-bottom:16px}
+.fld{margin-bottom:14px}
+.fld label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+.inp{display:flex;gap:8px}
+.inp input{flex:1;min-width:0;height:50px;padding:0 14px;border:1.5px solid var(--line);border-radius:14px;font-size:16px;background:var(--bg)}
+.inp input:focus{outline:none;border-color:var(--accent);background:var(--surface)}
+.mini{height:50px;padding:0 14px;border-radius:14px;background:var(--soft);color:var(--accent);font-weight:700;font-size:13px;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.hint{font-size:12px;color:var(--muted);margin-top:6px}
+.gpsbtn{width:100%;height:50px;border-radius:14px;background:var(--bg);font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;border:1.5px dashed var(--line)}
+.pv{display:none;border-radius:14px;padding:13px 14px;margin-bottom:14px;font-size:13.5px;line-height:1.5;gap:12px;align-items:center}
+.pv.on{display:flex}
+.pv .pi{font-size:22px}
+.pv.ok{background:var(--soft);color:var(--ink)}
+.pv.err{background:var(--warnsoft);color:var(--warn)}
+.pv.ld{background:var(--bg);color:var(--muted)}
+.pv small{color:var(--muted);display:block;direction:ltr}
+.foot{display:flex;gap:10px}
+.foot button{height:52px;border-radius:15px;font-weight:700;font-size:15px}
+.cancel{flex:1;background:var(--bg)}
+.save{flex:2;background:var(--accent);color:var(--accent-ink)}
+.save:disabled{opacity:.35}
+.nav{display:flex;align-items:center;gap:14px;padding:14px;border-radius:16px;background:var(--bg);margin-bottom:10px;text-decoration:none;color:var(--ink);font-weight:700;font-size:15px}
+.nav:active{background:var(--soft)}
+.nav .ni{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;background:var(--surface)}
+
+#toast{position:fixed;left:50%;top:max(16px,env(safe-area-inset-top));transform:translate(-50%,-90px);background:var(--ink);color:var(--bg);padding:12px 20px;border-radius:14px;font-size:14px;font-weight:600;z-index:3000;transition:transform .3s cubic-bezier(.2,.8,.2,1);max-width:90vw;text-align:center;box-shadow:var(--shadow)}
+#toast.show{transform:translate(-50%,0)}
+
+@media (min-width:820px){
+  #sheet{top:0;right:auto;width:400px;height:100%!important;border-radius:0;box-shadow:8px 0 30px rgba(14,27,44,.15)}
+  #grab{cursor:default}#grab .h{display:none}
+  #top{left:412px;right:12px;max-width:560px}
+  .fab{bottom:24px!important}
+  .scrim{align-items:center}.dlg{border-radius:26px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<!-- Input ascuns pentru cameră foto (coloana J) -->
+<input type="file" id="camInput" accept="image/*" capture="environment" hidden>
+
+<div id="top">
+  <div class="bar">
+    <img src="logo.jpeg" alt="Logo" class="brand-logo">
+    <label class="search">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input type="search" id="search" placeholder="Caută magazin" autocomplete="off" enterkeyhint="search">
+      <button class="clear" id="clear" aria-label="Șterge">✕</button>
+    </label>
+    <button class="refresh" id="refresh" aria-label="Reîncarcă">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+    </button>
+  </div>
+</div>
+
+<button class="fab" id="locate" aria-label="Locația mea">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="3.5"/><circle cx="12" cy="12" r="8"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/></svg>
+</button>
+
+<section id="sheet">
+  <div id="grab"><div class="h"></div><div class="t"><button class="back" id="back" hidden aria-label="Înapoi">‹</button><b id="count">Orașe</b><span id="total"></span></div></div>
+  <div id="list"></div>
+</section>
+
+<!-- Edit -->
+<div class="scrim" id="formModal">
+  <div class="dlg" role="dialog" aria-modal="true">
+    <div class="h"></div>
+    <h2 id="fTitle">Editează locația</h2>
+    <div class="fld">
+      <label for="f_name">Nume magazin</label>
+      <div class="inp"><input id="f_name" disabled></div>
+      <div class="hint">Numele este unic și nu poate fi modificat.</div>
+    </div>
+    <div class="fld">
+      <label for="f_city">Oraș (coloana H)</label>
+      <div class="inp">
+        <select id="f_city">
+          <option value="">— Fără oraș (gol) —</option>
+        </select>
+      </div>
+      <div class="hint">Selectează orașul din lista coloanei H sau lasă gol. Poți modifica oricând.</div>
+    </div>
+    <div class="fld">
+      <label for="f_detali">Detali (coloana I)</label>
+      <textarea id="f_detali" placeholder="Scrie detalii despre locație (un paragraf)…"></textarea>
+      <div class="hint">Se salvează în coloana I. Poți modifica oricând.</div>
+    </div>
+    <div class="fld">
+      <label>Poză livrare (coloana J)</label>
+      <div class="photo-box">
+        <div class="form-img-wrap" id="f_photoWrap" hidden>
+          <img id="f_photoImg" alt="Poză livrare">
+        </div>
+        <div class="photo-actions">
+          <button type="button" id="f_takePhotoBtn">📷 Fă o poză</button>
+          <button type="button" class="del-photo" id="f_delPhotoBtn" hidden>🗑️ Șterge</button>
+        </div>
+      </div>
+      <div class="hint">Se salvează în coloana J și se afișează la apăsarea butonului „!”.</div>
+    </div>
+    <div class="fld">
+      <label for="f_link">Link locație</label>
+      <div class="inp">
+        <input id="f_link" inputmode="url" placeholder="Lipește linkul aici" autocomplete="off">
+        <button class="mini" id="pasteBtn" type="button">📋 Lipește</button>
+      </div>
+      <div class="hint">Google Maps, Waze (și linkuri scurte), Apple Maps sau coordonate. Locația se detectează automat.</div>
+    </div>
+    <div class="pv" id="f_pv"></div>
+    <button class="gpsbtn" type="button" id="gpsBtn">📍 Folosește locația mea acum</button>
+    <div class="foot">
+      <button class="cancel" onclick="closeM('formModal')">Anulează</button>
+      <button class="save" id="saveBtn" disabled>Salvează</button>
+    </div>
+  </div>
+</div>
+
+<!-- Navigate -->
+<div class="scrim" id="navModal" onclick="if(event.target===this)closeM('navModal')">
+  <div class="dlg">
+    <div class="h"></div>
+    <h2 id="navTitle">Navighează</h2>
+    <a class="nav" id="navGoogle" target="_blank" rel="noopener"><span class="ni">🗺️</span>Google Maps</a>
+    <a class="nav" id="navWaze" target="_blank" rel="noopener"><span class="ni">🚗</span>Waze</a>
+    <a class="nav" id="navApple" target="_blank" rel="noopener" style="display:none"><span class="ni">🍎</span>Apple Maps</a>
+    <div class="foot"><button class="cancel" onclick="closeM('navModal')">Închide</button></div>
+  </div>
+</div>
+
+<!-- Fullscreen photo viewer -->
+<div id="photoViewer" onclick="this.classList.remove('open')">
+  <button class="pv-close" type="button" aria-label="Închide">✕</button>
+  <img id="pvImg" alt="Poză locație">
+</div>
+
+<div id="toast" role="status"></div>
+
+<script>
+/* ⚠️ PUNEȚI AICI LINKUL APPS SCRIPT */
+const API_URL = "https://script.google.com/macros/s/AKfycbwghTKSbSJaslIgv-R6hMhEvciT-AHMAuD2LPmR7OCuXUctAEGRp5hnksPCOFUvauP3QA/exec";
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const wide = () => window.matchMedia('(min-width:820px)').matches;
+
+let stores = [], cityOptions = [], map, tiles, pins = {}, meMarker;
+let selected = null, cityFilter = null;
+let form = { row:null, loc:null, initialCity:'', initialDetali:'', initialPhoto:'', currentPhoto:'', locChanged:false, cityChanged:false, detaliChanged:false, photoChanged:false };
+let camTarget = { mode:null, row:null }; // mode: 'card' | 'form'
+let snap = 1;
+
+/* ============================================================
+   🔧 NORMALIZARE NUME ORAȘ
+   ============================================================ */
+function normalizeCity(city) {
+  if (!city) return '';
+  return String(city)
+    .replace(/[\u200B-\u200F\u202A-\u202E\uFEFF]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+    .replace(/[şș]/g, 's')
+    .replace(/[ţț]/g, 't')
+    .replace(/[ăâ]/g, 'a')
+    .replace(/[îí]/g, 'i')
+    .replace(/[\u064B-\u065F\u0670]/g, '')
+    .replace(/[ىي]/g, 'ی')
+    .replace(/[كک]/g, 'ک');
+}
+
+/* ============================================================
+   🔧 PARSARE COORDONATE
+   ============================================================ */
+function parseCoord(val, type) {
+  if (val === null || val === undefined) return null;
+  const num = parseFloat(String(val).trim().replace(',', '.').replace(/\s+/g, ''));
+  if (isNaN(num)) return null;
+  if (type === 'lat' && (num < -90 || num > 90)) return null;
+  if (type === 'lng' && (num < -180 || num > 180)) return null;
+  return num;
+}
+function getCoords(s) {
+  let lat = parseCoord(s.lat, 'lat'), lng = parseCoord(s.lng, 'lng');
+  if (lat !== null && lng !== null && Math.abs(lat) > 90 && Math.abs(lng) <= 90) [lat, lng] = [lng, lat];
+  return (lat === null || lng === null) ? null : [lat, lng];
+}
+
+const PATTERNS = [
+  /@(-?\d+\.?\d*),(-?\d+\.?\d*)/,
+  /[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/,
+  /[?&]ll=(-?\d+\.?\d*),(-?\d+\.?\d*)/,
+  /[?&]center=(-?\d+\.?\d*),(-?\d+\.?\d*)/,
+  /!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/,
+  /ll\.(-?\d+\.?\d*)(?:,|%2C)(-?\d+\.?\d*)/i,
+  /\/place\/(-?\d+\.?\d*),(-?\d+\.?\d*)/,
+  /^(-?\d+\.?\d*)\s*[,;]\s*(-?\d+\.?\d*)$/
+];
+function matchCoords(text) {
+  for (const p of PATTERNS) {
+    const m = text.match(p);
+    if (m) {
+      const lat = parseFloat(m[1]), lng = parseFloat(m[2]);
+      if (!isNaN(lat) && !isNaN(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
+    }
+  }
+  return null;
+}
+function geohashDecode(h) {
+  const B = '0123456789bcdefghjkmnpqrstuvwxyz';
+  let lat = [-90, 90], lng = [-180, 180], even = true;
+  for (const ch of h.toLowerCase()) {
+    const idx = B.indexOf(ch); if (idx < 0) return null;
+    for (let b = 4; b >= 0; b--) {
+      const r = even ? lng : lat, mid = (r[0] + r[1]) / 2;
+      if ((idx >> b) & 1) r[0] = mid; else r[1] = mid;
+      even = !even;
+    }
+  }
+  return { lat:(lat[0] + lat[1]) / 2, lng:(lng[0] + lng[1]) / 2 };
+}
+async function extractCoordsFromLink(url) {
+  url = (url || '').trim();
+  if (!url) return null;
+  const wz = url.match(/waze\.com\/ul\/h([0-9b-hjkmnp-z]+)/i);
+  if (wz) { const g = geohashDecode(wz[1]); if (g) return g; }
+  const direct = matchCoords(url);
+  if (direct) return direct;
+  if (/goo\.gl|maps\.app\.goo\.gl|waze\.com\/ul|apple\.co|maps\.apple\.com/i.test(url)) {
+    try {
+      const res = await fetch(`https://r.jina.ai/${url}`);
+      return matchCoords(await res.text().catch(() => ''));
+    } catch(e) { console.warn(e); }
+  }
+  return null;
+}
+
+/* ============================================================
+   API
+   ============================================================ */
+const apiGet = p => fetch(API_URL + "?" + new URLSearchParams(p), {redirect:'follow'}).then(r => r.json());
+const apiPost = p => fetch(API_URL, {
+  method:'POST', body:new URLSearchParams(p).toString(),
+  headers:{'Content-Type':'application/x-www-form-urlencoded'}
+}).then(r => r.json());
+
+function toast(msg, dur = 2400) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), dur);
+}
+
+/* ============================================================
+   📷 COMPRESIE & SALVARE POZĂ (COLOANA J)
+   ============================================================ */
+function compressImage(file, maxW = 720, quality = 0.68) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if (w > maxW) { h = Math.round(h * (maxW / w)); w = maxW; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        let dataUrl = canvas.toDataURL('image/jpeg', quality);
+        // Google Sheets limit per cell is 50,000 chars; shrink further if needed
+        if (dataUrl.length > 46000) {
+          dataUrl = canvas.toDataURL('image/jpeg', 0.45);
+        }
+        resolve(dataUrl);
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function triggerCamera(mode, row) {
+  camTarget = { mode, row };
+  const inp = $('camInput');
+  inp.value = '';
+  inp.click();
+}
+
+$('camInput').addEventListener('change', async e => {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  toast('Se procesează poza…', 4000);
+  try {
+    const dataUrl = await compressImage(file);
+    if (camTarget.mode === 'form') {
+      form.currentPhoto = dataUrl;
+      updateFormPhotoUI();
+      checkForm();
+      toast('Poză pregătită. Apasă Salvează.');
+    } else if (camTarget.mode === 'card' && camTarget.row) {
+      await saveStorePhoto(camTarget.row, dataUrl);
+    }
+  } catch (err) {
+    console.error(err);
+    toast('Eroare la procesarea pozei');
+  }
+});
+
+async function saveStorePhoto(row, photoDataUrl) {
+  const s = stores.find(x => x.rowIndex === row);
+  if (!s) return;
+  const old = getCoords(s);
+  const data = {
+    rowIndex: s.rowIndex,
+    number: s.number ?? '',
+    name: s.name,
+    address: s.address ?? '',
+    mapAddress: s.mapAddress ?? '',
+    lng: old ? old[1] : (s.lng ?? ''),
+    lat: old ? old[0] : (s.lat ?? ''),
+    region: (s.region || '').trim(),
+    detali: String(s.detali ?? '').trim(),
+    photo: photoDataUrl
+  };
+  toast('Se salvează poza în coloana J…', 5000);
+  try {
+    const res = await apiPost({ action:'update', data:JSON.stringify(data) });
+    if (res.success) {
+      s.photo = photoDataUrl;
+      selected = row;
+      render();
+      // Deschide automat caseta ! ca să vezi poza salvată
+      const card = document.querySelector(`.card[data-row="${row}"]`);
+      if (card) {
+        card.classList.add('info-open');
+        const btn = card.querySelector('[data-info]');
+        if (btn) btn.setAttribute('aria-expanded', 'true');
+      }
+      toast('✅ Poză salvată!');
+    } else {
+      toast('Eroare: ' + res.message);
+    }
+  } catch (err) {
+    toast('Fără conexiune. Încearcă din nou.');
+  }
+}
+
+/* ============================================================
+   HARTĂ
+   ============================================================ */
+const dark = window.matchMedia('(prefers-color-scheme:dark)');
+function setTiles() {
+  if (tiles) map.removeLayer(tiles);
+  tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    { maxZoom:19, attribution:'© OpenStreetMap' }).addTo(map);
+  tiles.getContainer().classList.add('osm');
+}
+function initMap() {
+  map = L.map('map', { zoomControl:false }).setView([45.9432, 24.9668], 7);
+  setTiles();
+  dark.addEventListener('change', setTiles);
+}
+function pinIcon(sel) { return L.divIcon({ className:'pin' + (sel ? ' sel' : ''), html:'<i></i>', iconSize:[26,26], iconAnchor:[13,26] }); }
+
+/* ============================================================
+   🇷🇴 GRANIȚA ROMÂNIEI + ORAȘE
+   ============================================================ */
+let roLayer = null, roMask = null, cityLayer = null, cityDrawn = null, bubbles = [];
+
+async function fetchBoundary(q) {
+  const key = 'bd:' + q;
+  try { const c = localStorage.getItem(key); if (c) return JSON.parse(c); } catch(e) {}
+  try {
+    const r = await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&polygon_geojson=1&polygon_threshold=0.005&q=' + encodeURIComponent(q));
+    const j = await r.json();
+    const g = j[0] && j[0].geojson;
+    if (g && /Polygon/.test(g.type)) {
+      try { localStorage.setItem(key, JSON.stringify(g)); } catch(e) {}
+      return g;
+    }
+  } catch(e) { console.warn(e); }
+  return null;
+}
+
+async function drawRomania() {
+  const g = await fetchBoundary('Romania');
+  if (!g) return;
+  const polys = g.type === 'Polygon' ? [g.coordinates] : g.coordinates;
+  const holes = polys.map(p => L.GeoJSON.coordsToLatLngs(p[0], 0));
+  roMask = L.polygon([[[-90,-180],[-90,180],[90,180],[90,-180]], ...holes],
+    { stroke:false, fillColor:'#0e1b2c', fillOpacity:.4, interactive:false }).addTo(map);
+  roLayer = L.geoJSON(g, { style:{ color:'#0a8f7a', weight:3, fill:false }, interactive:false }).addTo(map);
+  if (cityFilter === null && !$('search').value.trim()) fitRomania();
+}
+function fitRomania() {
+  if (!roLayer) return;
+  const sh = snaps()[snap];
+  map.fitBounds(roLayer.getBounds(), wide()
+    ? { paddingTopLeft:[420,110], paddingBottomRight:[30,30] }
+    : { paddingTopLeft:[20,110], paddingBottomRight:[20, sh + 20] });
+}
+
+async function drawCity(name) {
+  if (cityDrawn === name) return;
+  cityDrawn = name;
+  if (cityLayer) { map.removeLayer(cityLayer); cityLayer = null; }
+  if (!name) return;
+  const g = await fetchBoundary(name + ', Romania');
+  if (cityDrawn !== name || !g) return;
+  cityLayer = L.geoJSON(g, { style:{ color:'#ef4444', weight:2.5, dashArray:'6 6', fillColor:'#ef4444', fillOpacity:.08 }, interactive:false }).addTo(map);
+}
+
+function openCity(key) {
+  cityFilter = key; selected = null;
+  $('search').value = '';
+  if (!wide() && snap === 2) goSnap(1);
+  render(); $('list').scrollTop = 0;
+}
+
+/* ============================================================
+   PANOU GLISANT
+   ============================================================ */
+function snaps() { const H = window.innerHeight; return [96, Math.round(H * .46), Math.round(H * .86)]; }
+function setSheet(px, drag) {
+  document.documentElement.style.setProperty('--sh', px + 'px');
+  $('sheet').classList.toggle('dragging', !!drag);
+  $('locate').classList.toggle('dragging', !!drag);
+}
+function goSnap(i) { snap = i; setSheet(snaps()[i]); }
+(function dragInit() {
+  const g = $('grab'); let y0, h0, moved;
+  g.addEventListener('pointerdown', e => { if (wide() || e.target.closest('button')) return; y0 = e.clientY; h0 = $('sheet').offsetHeight; moved = false; g.setPointerCapture(e.pointerId); });
+  g.addEventListener('pointermove', e => {
+    if (y0 === undefined) return;
+    const dy = y0 - e.clientY; if (Math.abs(dy) > 4) moved = true;
+    setSheet(Math.max(96, Math.min(window.innerHeight * .9, h0 + dy)), true);
+  });
+  g.addEventListener('pointerup', () => {
+    if (y0 === undefined) return;
+    if (!moved) { goSnap((snap + 1) % 3); }
+    else { const h = $('sheet').offsetHeight, s = snaps(); let b = 0; s.forEach((v, i) => { if (Math.abs(v - h) < Math.abs(s[b] - h)) b = i; }); goSnap(b); }
+    y0 = undefined;
+  });
+})();
+
+/* ============================================================
+   ÎNCĂRCARE DATE
+   ============================================================ */
+async function load() {
+  $('refresh').classList.add('spin');
+  $('list').innerHTML = '<div class="sk"></div><div class="sk"></div><div class="sk"></div>';
+  try {
+    const res = await apiGet({ action:'getAll' });
+    if (res.success) {
+      stores = res.data || [];
+      if (Array.isArray(res.cityOptions) && res.cityOptions.length) {
+        cityOptions = res.cityOptions;
+      } else {
+        const set = new Set();
+        stores.forEach(s => { if (s.hValue && String(s.hValue).trim()) set.add(String(s.hValue).trim()); });
+        cityOptions = Array.from(set).sort((a, b) => a.localeCompare(b, 'ro'));
+      }
+      render();
+    } else toast('Eroare: ' + res.message);
+  } catch(e) { toast('Fără conexiune. Încearcă din nou.'); render(); }
+  finally { $('refresh').classList.remove('spin'); }
+}
+
+/* ============================================================
+   RANDARE LISTĂ (cu grupare corectă a orașelor)
+   ============================================================ */
+function render() {
+  const q = $('search').value.trim().toLowerCase();
+  $('clear').classList.toggle('on', !!q);
+  const inCity = cityFilter !== null;
+  $('back').hidden = !inCity;
+  const list = $('list');
+
+  Object.values(pins).forEach(m => map.removeLayer(m)); pins = {};
+  bubbles.forEach(b => map.removeLayer(b)); bubbles = [];
+  if (!inCity) drawCity(null);
+
+  /* 1. lista de orașe */
+  if (!inCity && !q) {
+    const groups = new Map();
+    stores.forEach(s => {
+      const raw = (s.region || '').trim();
+      const key = normalizeCity(raw);
+      if (!groups.has(key)) groups.set(key, { display: raw, count: 0, pts: [] });
+      const g = groups.get(key); g.count++;
+      const c = getCoords(s); if (c) g.pts.push(c);
+    });
+
+    const entries = [...groups.entries()].sort((a, b) => {
+      if (!a[0]) return 1;
+      if (!b[0]) return -1;
+      return a[0].localeCompare(b[0], 'ro');
+    });
+
+    $('count').textContent = entries.length === 1 ? '1 oraș' : `${entries.length} orașe`;
+    $('total').textContent = `${stores.length} magazine`;
+
+    list.innerHTML = entries.length ? entries.map(([key, g]) => {
+      const label = g.display || 'Fără oraș';
+      const n = g.count;
+      return `<div class="city" data-key="${esc(key)}">
+        <div class="ico">${esc(label.charAt(0).toUpperCase())}</div>
+        <div class="meta">
+          <div class="nm">${esc(label)}</div>
+          <div class="cc">${n === 1 ? '1 magazin' : n + ' magazine'}</div>
+        </div>
+        <span class="chev">›</span>
+      </div>`;
+    }).join('') : '<div class="empty">Nu s-au găsit magazine.<br>Verifică linkul Apps Script.</div>';
+
+    entries.forEach(([key, g]) => {
+      if (!g.pts.length) return;
+      const lat = g.pts.reduce((a, p) => a + p[0], 0) / g.pts.length;
+      const lng = g.pts.reduce((a, p) => a + p[1], 0) / g.pts.length;
+      bubbles.push(L.marker([lat, lng], {
+        icon: L.divIcon({ className:'', html:`<div class="cb">${g.count}</div>`, iconSize:[38,38] })
+      }).addTo(map).on('click', () => openCity(key)));
+    });
+    fitRomania();
+    return;
+  }
+
+  /* 2. magazinele unui oraș (sau rezultatele căutării) */
+  const cityKey = inCity ? normalizeCity(cityFilter) : null;
+  const filtered = stores.filter(s => {
+    if (q && !(s.name || '').toLowerCase().includes(q)) return false;
+    if (inCity && normalizeCity(s.region || '') !== cityKey) return false;
+    return true;
+  });
+
+  if (inCity) {
+    const sample = stores.find(s => normalizeCity(s.region || '') === cityKey);
+    $('count').textContent = (sample?.region || '').trim() || 'Fără oraș';
+    drawCity((sample?.region || '').trim());
+  } else {
+    $('count').textContent = 'Rezultate';
+  }
+  $('total').textContent = filtered.length === 1 ? '1 magazin' : `${filtered.length} magazine`;
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty">Niciun magazin nu se potrivește.<br>Încearcă alt nume.</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(s => {
+    const has = !!getCoords(s), name = s.name || 'Fără nume';
+    const det = String(s.detali ?? '').trim();
+    const photo = String(s.photo ?? '').trim();
+    const hasInfo = !!(det || photo);
+    return `<div class="card ${s.rowIndex === selected ? 'active' : ''}" data-row="${s.rowIndex}">
+      <div class="row">
+        <div class="ico">${esc(name.trim().charAt(0).toUpperCase())}</div>
+        <div class="meta">
+          <div class="nm">${esc(name)}</div>
+          <div class="sub">${!inCity && s.region ? esc(s.region) : ''}${has ? '' : '<span class="nolo">Fără locație</span>'}</div>
+        </div>
+        <div class="card-tools">
+          <button class="cam-btn ${photo ? 'has-photo' : ''}" type="button" data-cam="${s.rowIndex}" aria-label="Fă poză locație" title="Fă poză locație">📷</button>
+          ${hasInfo ? `<button class="info-btn" type="button" data-info="${s.rowIndex}" aria-label="Arată detaliile și poza" aria-expanded="false">!</button>` : ''}
+        </div>
+      </div>
+      ${hasInfo ? `<div class="info-box"><b>📝 Detalii livrare</b>${det ? `<div class="info-text">${esc(det)}</div>` : ''}${photo ? `<img class="info-photo" src="${esc(photo)}" alt="Poză livrare">` : ''}</div>` : ''}
+      <div class="acts">
+        <button class="go" data-go="${s.rowIndex}" ${has ? '' : 'disabled'}>🧭 Navighează</button>
+        <button class="ed" data-ed="${s.rowIndex}" aria-label="Editează locația">✏️</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  const visible = [];
+  filtered.forEach(s => {
+    const c = getCoords(s); if (!c) return;
+    visible.push(c);
+    pins[s.rowIndex] = L.marker(c, { icon:pinIcon(s.rowIndex === selected) }).addTo(map)
+      .on('click', () => select(s.rowIndex, true));
+  });
+  if (visible.length) fit(visible);
+}
+
+function fit(coords) {
+  const sh = snaps()[snap];
+  const opt = wide() ? { paddingTopLeft:[420, 110], paddingBottomRight:[30, 30] } : { paddingTopLeft:[30, 120], paddingBottomRight:[30, sh + 20] };
+  map.fitBounds(L.latLngBounds(coords), { ...opt, maxZoom:16, animate:true });
+}
+
+function select(row, fromPin) {
+  const s = stores.find(x => x.rowIndex === row); if (!s) return;
+  selected = row;
+  Object.entries(pins).forEach(([r, m]) => m.setIcon(pinIcon(+r === row)));
+  document.querySelectorAll('.card').forEach(c => c.classList.toggle('active', +c.dataset.row === row));
+  const c = getCoords(s);
+  if (!wide() && snap !== 1) goSnap(1);
+  if (c) setTimeout(() => fit([c]), 60); else toast('Acest magazin nu are locație');
+  const card = document.querySelector(`.card[data-row="${row}"]`);
+  if (card && fromPin) card.scrollIntoView({ block:'nearest', behavior:'smooth' });
+}
+
+/* ============================================================
+   EDITARE LOCAȚIE + COMBOBOX ORAȘ (H) + DETALI (I) + POZĂ (J)
+   ============================================================ */
+function populateCitySelect(currentCity) {
+  const sel = $('f_city');
+  const trimmedCurrent = (currentCity || '').trim();
+  const options = [...cityOptions];
+
+  if (trimmedCurrent && !options.some(o => normalizeCity(o) === normalizeCity(trimmedCurrent))) {
+    options.unshift(trimmedCurrent);
+  }
+
+  sel.innerHTML = '<option value="">— Fără oraș (gol) —</option>' +
+    options.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+
+  const matched = options.find(o => normalizeCity(o) === normalizeCity(trimmedCurrent));
+  sel.value = matched || '';
+}
+
+function updateFormPhotoUI() {
+  const has = !!form.currentPhoto;
+  $('f_photoWrap').hidden = !has;
+  $('f_delPhotoBtn').hidden = !has;
+  $('f_takePhotoBtn').textContent = has ? '📷 Refă poza' : '📷 Fă o poză';
+  if (has) $('f_photoImg').src = form.currentPhoto;
+}
+
+function setPreview(state, html) {
+  const p = $('f_pv'); p.className = 'pv on ' + state; p.innerHTML = html;
+}
+function showLoc(loc, label) {
+  const cityLabel = $('f_city').value.trim() || loc.city || '';
+  setPreview('ok', `<span class="pi">✅</span><div><b>${esc(label)}</b>${cityLabel ? ' · ' + esc(cityLabel) : ''}<small>${(+loc.lat).toFixed(5)}, ${(+loc.lng).toFixed(5)}</small></div>`);
+}
+function checkForm() {
+  const curCity = $('f_city').value.trim();
+  form.cityChanged = normalizeCity(curCity) !== normalizeCity(form.initialCity);
+  form.detaliChanged = $('f_detali').value.trim() !== form.initialDetali;
+  form.photoChanged = form.currentPhoto !== form.initialPhoto;
+  const canSave = form.locChanged || form.detaliChanged || form.photoChanged || (form.cityChanged && !!form.loc);
+  $('saveBtn').disabled = !canSave;
+}
+const curStore = () => stores.find(x => x.rowIndex === form.row);
+
+function openForm(row) {
+  const s = stores.find(x => x.rowIndex === row); if (!s) return;
+  const initCity = (s.region || '').trim();
+  const initDetali = String(s.detali ?? '').trim();
+  const initPhoto = String(s.photo ?? '').trim();
+  form = {
+    row, loc:null,
+    initialCity:initCity, initialDetali:initDetali, initialPhoto:initPhoto, currentPhoto:initPhoto,
+    locChanged:false, cityChanged:false, detaliChanged:false, photoChanged:false
+  };
+  $('f_link').value = ''; $('f_pv').className = 'pv';
+  $('f_name').value = s.name || '';
+  $('f_detali').value = initDetali;
+  populateCitySelect(initCity);
+  updateFormPhotoUI();
+
+  const c = getCoords(s);
+  if (c) {
+    form.loc = {
+      lat:c[0].toFixed(7),
+      lng:c[1].toFixed(7),
+      city:initCity,
+      mapLink:s.mapAddress || `https://www.google.com/maps?q=${c[0]},${c[1]}`
+    };
+    showLoc(form.loc, 'Locația actuală');
+  }
+  checkForm();
+  $('formModal').classList.add('open');
+}
+
+$('f_takePhotoBtn').onclick = () => triggerCamera('form', form.row);
+$('f_delPhotoBtn').onclick = () => {
+  form.currentPhoto = '';
+  updateFormPhotoUI();
+  checkForm();
+};
+
+$('f_city').addEventListener('change', () => {
+  const selectedCity = $('f_city').value.trim();
+  if (form.loc) {
+    form.loc.city = selectedCity;
+    showLoc(form.loc, form.locChanged ? 'Locație găsită' : 'Locația actuală');
+  }
+  checkForm();
+});
+$('f_detali').addEventListener('input', checkForm);
+
+async function setNewLoc(lat, lng, label) {
+  const selectedCity = $('f_city').value.trim();
+  form.loc = {
+    lat:lat.toFixed(7),
+    lng:lng.toFixed(7),
+    city:selectedCity,
+    mapLink:`https://www.google.com/maps?q=${lat},${lng}`
+  };
+  form.locChanged = true;
+  showLoc(form.loc, label);
+  checkForm();
+}
+
+async function processLink(input) {
+  input = input.trim(); if (!input) return;
+  setPreview('ld', '<span class="pi">⏳</span><div>Se caută locația…</div>');
+  const c = await extractCoordsFromLink(input);
+  if (!c) {
+    form.loc = null; form.locChanged = false;
+    setPreview('err', '<span class="pi">⚠️</span><div>Nu am găsit coordonate în link. Verifică linkul sau folosește locația ta.</div>');
+    checkForm(); return;
+  }
+  await setNewLoc(c.lat, c.lng, 'Locație găsită');
+}
+
+let linkT;
+$('f_link').addEventListener('input', e => { clearTimeout(linkT); linkT = setTimeout(() => processLink(e.target.value), 600); });
+$('pasteBtn').onclick = async () => {
+  try { const t = await navigator.clipboard.readText(); $('f_link').value = t; processLink(t); }
+  catch(e) { toast('Lipește manual în câmp'); $('f_link').focus(); }
+};
+$('gpsBtn').onclick = () => {
+  if (!navigator.geolocation) return toast('GPS indisponibil');
+  setPreview('ld', '<span class="pi">⏳</span><div>Se obține locația…</div>');
+  navigator.geolocation.getCurrentPosition(
+    pos => setNewLoc(pos.coords.latitude, pos.coords.longitude, 'Locația ta'),
+    err => setPreview('err', `<span class="pi">⚠️</span><div>GPS: ${esc(err.message)}</div>`),
+    { enableHighAccuracy:true, timeout:20000 });
+};
+
+$('saveBtn').onclick = async () => {
+  const s = curStore();
+  if (!s) return;
+  const loc = form.loc;
+  const finalCity = $('f_city').value.trim();
+  const old = getCoords(s);
+  const data = {
+    rowIndex:form.row,
+    number:s.number ?? '',
+    name:s.name,
+    address:s.address ?? '',
+    mapAddress: loc ? loc.mapLink : (s.mapAddress ?? ''),
+    lng: loc ? loc.lng : (old ? old[1] : (s.lng ?? '')),
+    lat: loc ? loc.lat : (old ? old[0] : (s.lat ?? '')),
+    region:finalCity,
+    detali:$('f_detali').value.trim(),
+    photo:form.currentPhoto
+  };
+  const btn = $('saveBtn'); btn.disabled = true; btn.textContent = 'Se salvează…';
+  try {
+    const res = await apiPost({ action:'update', data:JSON.stringify(data) });
+    if (res.success) {
+      closeM('formModal'); toast('Salvat');
+      selected = form.row;
+      await load();
+      const c = getCoords(data); if (c) fit([c]);
+    } else toast('Eroare: ' + res.message);
+  } catch(e) { toast('Fără conexiune. Încearcă din nou.'); }
+  finally { btn.textContent = 'Salvează'; checkForm(); }
+};
+
+function closeM(id) { $(id).classList.remove('open'); }
+$('formModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeM('formModal'); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.scrim.open').forEach(s => s.classList.remove('open'));
+    $('photoViewer').classList.remove('open');
+  }
+});
+
+/* ============================================================
+   NAVIGARE
+   ============================================================ */
+function openNav(row) {
+  const s = stores.find(x => x.rowIndex === row), c = s && getCoords(s);
+  if (!c) return toast('Fără locație');
+  const [lat, lng] = c;
+  $('navTitle').textContent = s.name || 'Navighează';
+  $('navGoogle').href = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
+  $('navWaze').href = `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`;
+  const a = $('navApple'), ios = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  a.style.display = ios ? 'flex' : 'none';
+  if (ios) a.href = `https://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`;
+  $('navModal').classList.add('open');
+}
+
+/* ============================================================
+   EVENIMENTE
+   ============================================================ */
+$('list').addEventListener('click', e => {
+  const cam = e.target.closest('[data-cam]');
+  if (cam) {
+    e.stopPropagation();
+    triggerCamera('card', +cam.dataset.cam);
+    return;
+  }
+  const info = e.target.closest('[data-info]');
+  if (info) {
+    const card = info.closest('.card');
+    const isOpen = card.classList.toggle('info-open');
+    info.setAttribute('aria-expanded', String(isOpen));
+    e.stopPropagation();
+    return;
+  }
+  const photo = e.target.closest('.info-photo');
+  if (photo) {
+    e.stopPropagation();
+    $('pvImg').src = photo.src;
+    $('photoViewer').classList.add('open');
+    return;
+  }
+  if (e.target.closest('.info-box')) {
+    e.stopPropagation();
+    return;
+  }
+  const go = e.target.closest('[data-go]'), ed = e.target.closest('[data-ed]'), card = e.target.closest('.card');
+  if (go) return openNav(+go.dataset.go);
+  if (ed) return openForm(+ed.dataset.ed);
+  if (card) select(+card.dataset.row);
+});
+$('list').addEventListener('click', e => {
+  const c = e.target.closest('.city'); if (c) openCity(c.dataset.key);
+});
+$('back').onclick = () => {
+  cityFilter = null; selected = null; render();
+};
+$('refresh').onclick = load;
+$('search').addEventListener('input', render);
+$('clear').onclick = () => { $('search').value = ''; render(); $('search').focus(); };
+$('locate').onclick = () => {
+  if (!navigator.geolocation) return toast('GPS indisponibil');
+  navigator.geolocation.getCurrentPosition(p => {
+    const ll = [p.coords.latitude, p.coords.longitude];
+    if (meMarker) map.removeLayer(meMarker);
+    meMarker = L.marker(ll, { icon:L.divIcon({ className:'', html:'<div class="me"></div>', iconSize:[16,16] }), interactive:false }).addTo(map);
+    fit([ll]);
+  }, err => toast('GPS: ' + err.message), { enableHighAccuracy:true, timeout:15000 });
+};
+window.addEventListener('resize', () => { if (!wide()) setSheet(snaps()[snap]); map.invalidateSize(); });
+
+initMap();
+drawRomania();
+goSnap(1);
+load();
+</script>
+</body>
+</html>
